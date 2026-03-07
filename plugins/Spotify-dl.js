@@ -2,6 +2,15 @@ const { cmd } = require('../command');
 const axios = require('axios');
 const IMG = 'https://files.catbox.moe/xka13x.jpg';
 
+/**
+ * Downloads a Spotify track from multiple APIs.
+ *
+ * The function attempts to fetch download information from a list of predefined APIs. It encodes the provided URL and makes asynchronous requests to each API. If a successful response containing a download link is received, it returns the relevant data. If all API requests fail, an error is thrown.
+ *
+ * @param url - The Spotify track URL to download.
+ * @returns The download information of the track if successful.
+ * @throws Error If all Spotify APIs fail to provide a download link.
+ */
 async function spotifyDownload(url) {
     const apis = [
         async () => {
