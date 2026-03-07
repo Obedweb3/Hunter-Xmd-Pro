@@ -1,0 +1,15 @@
+name: hunter-xmd-pro
+services:
+  - name: bot
+    git:
+      branch: main
+    build:
+      builder: dockerfile
+    run:
+      command: node index.js
+    ports:
+      - port: 9090
+        protocol: http
+    env:
+      - key: NODE_ENV
+        value: production

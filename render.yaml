@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: hunter-xmd-pro
+    env: node
+    buildCommand: npm install
+    startCommand: node index.js
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SESSION_ID
+        sync: false
+      - key: OWNER_NUMBER
+        sync: false
+      - key: PREFIX
+        value: "."
+      - key: MODE
+        value: public
+      - key: AUTO_BIO
+        value: "false"
+      - key: ANTI_DEL_PATH
+        value: same
