@@ -372,20 +372,43 @@ function clearSessionData() {
             } else {
                 logSystem('Heroku mode: Using SESSION_ID from env vars...', '☁️');
                 try {
-                    let base64Session = process.env.SESSION_ID.trim();
-                    if (base64Session.startsWith('HUNTER-XMD~')) {
-                        base64Session = base64Session.replace('HUNTER-XMD~', '').trim();
+                    let sessionRaw = process.env.SESSION_ID.trim();
+                    if (sessionRaw.startsWith('HUNTER-XMD~')) {
+                        sessionRaw = sessionRaw.slice('HUNTER-XMD~'.length).trim();
                     }
-                    if (base64Session && base64Session.length >= 100) {
-                        const decoded = Buffer.from(base64Session, 'base64').toString('utf-8');
-                        const creds = JSON.parse(decoded);
+                    let creds = null;
+                    // Method 1: plain JSON
+                    try { creds = JSON.parse(sessionRaw); logSuccess('Session decoded as JSON', '✅'); } catch(_) {}
+                    // Method 2: base64 -> JSON
+                    if (!creds) {
+                        try {
+                            const dec = Buffer.from(sessionRaw, 'base64').toString('utf-8');
+                            creds = JSON.parse(dec);
+                            logSuccess('Session decoded via base64', '✅');
+                        } catch(_) {}
+                    }
+                    // Method 3: url-safe base64
+                    if (!creds) {
+                        try {
+                            const fixed = sessionRaw.replace(/-/g,'+').replace(/_/g,'/');
+                            const padded = fixed + '='.repeat((4 - fixed.length % 4) % 4);
+                            creds = JSON.parse(Buffer.from(padded, 'base64').toString('utf-8'));
+                            logSuccess('Session decoded via url-safe base64', '✅');
+                        } catch(_) {}
+                    }
+                    if (creds && creds.noiseKey) {
                         fs.mkdirSync(__dirname + '/sessions', { recursive: true });
                         fs.writeFileSync(__dirname + '/sessions/creds.json', JSON.stringify(creds, null, 2));
-                        logSuccess('SESSION_ID successfully saved to creds.json', '✅');
-                    } else logWarning('SESSION_ID appears invalid, falling back to pairing', '⚠️');
-                } catch (e) { 
-                    logError(`Failed to process SESSION_ID: ${e.message}`, '❌'); 
-                    clearSessionData();
+                        logSuccess('SESSION_ID saved to creds.json successfully!', '✅');
+                    } else {
+                        logError('SESSION_ID is invalid or incomplete!', '❌');
+                        logWarning('Please regenerate your session from the pairing site.', '💡');
+                        fs.mkdirSync(__dirname + '/sessions', { recursive: true });
+                    }
+                } catch (e) {
+                    logError(`Failed to process SESSION_ID: ${e.message}`, '❌');
+                    logWarning('Regenerate your session at the pairing site.', '💡');
+                    fs.mkdirSync(__dirname + '/sessions', { recursive: true });
                 }
             }
         } else {
