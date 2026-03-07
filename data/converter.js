@@ -9,18 +9,37 @@ class AudioConverter {
         this.ensureTempDir();
     }
 
+    /**
+     * Ensures that the temporary directory exists, creating it if necessary.
+     */
     ensureTempDir() {
         if (!fs.existsSync(this.tempDir)) {
             fs.mkdirSync(this.tempDir, { recursive: true });
         }
     }
 
+    /**
+     * Deletes the specified file if it exists.
+     */
     async cleanFile(file) {
         if (file && fs.existsSync(file)) {
             await fs.promises.unlink(file).catch(() => {});
         }
     }
 
+    /**
+     * Converts a buffer to a specified format using ffmpeg.
+     *
+     * The function writes the input buffer to a temporary file, spawns an ffmpeg process to convert the file, and handles the output.
+     * It cleans up temporary files after the conversion process, and resolves with the converted data or rejects with an error if the conversion fails.
+     *
+     * @param buffer - The input data to be converted.
+     * @param args - The arguments to be passed to the ffmpeg command.
+     * @param ext - The extension of the input file.
+     * @param ext2 - The extension of the output file.
+     * @returns A promise that resolves with the converted data.
+     * @throws Error If the conversion fails or if reading the output file fails.
+     */
     async convert(buffer, args, ext, ext2) {
         const inputPath = path.join(this.tempDir, `${Date.now()}.${ext}`);
         const outputPath = path.join(this.tempDir, `${Date.now()}.${ext2}`);
@@ -67,6 +86,9 @@ class AudioConverter {
         }
     }
 
+    /**
+     * Converts audio buffer to MP3 format.
+     */
     toAudio(buffer, ext) {
         return this.convert(buffer, [
             '-vn',
@@ -77,6 +99,9 @@ class AudioConverter {
         ], ext, 'mp3');
     }
 
+    /**
+     * Converts the given buffer to PTT format using specified audio parameters.
+     */
     toPTT(buffer, ext) {
         return this.convert(buffer, [
             '-vn',
