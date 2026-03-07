@@ -396,14 +396,30 @@ function clearSessionData() {
                             logSuccess('Session decoded via url-safe base64', '✅');
                         } catch(_) {}
                     }
-                    if (creds && creds.noiseKey) {
+                    // Debug: log what we got
+                    logSystem('SESSION_ID length: ' + process.env.SESSION_ID.length, '🔍');
+                    logSystem('Raw after strip length: ' + sessionRaw.length, '🔍');
+                    if (creds && typeof creds === 'object') {
                         fs.mkdirSync(__dirname + '/sessions', { recursive: true });
                         fs.writeFileSync(__dirname + '/sessions/creds.json', JSON.stringify(creds, null, 2));
-                        logSuccess('SESSION_ID saved to creds.json successfully!', '✅');
+                        logSuccess('SESSION_ID saved to creds.json! Keys: ' + Object.keys(creds).join(','), '✅');
                     } else {
-                        logError('SESSION_ID is invalid or incomplete!', '❌');
-                        logWarning('Please regenerate your session from the pairing site.', '💡');
-                        fs.mkdirSync(__dirname + '/sessions', { recursive: true });
+                        // Last resort: write raw decoded string directly as creds
+                        try {
+                            const lastTry = Buffer.from(sessionRaw, 'base64').toString('utf-8');
+                            logSystem('Last resort raw decode length: ' + lastTry.length, '🔍');
+                            if (lastTry.includes('noiseKey')) {
+                                fs.mkdirSync(__dirname + '/sessions', { recursive: true });
+                                fs.writeFileSync(__dirname + '/sessions/creds.json', lastTry);
+                                logSuccess('SESSION_ID saved via last resort decode!', '✅');
+                            } else {
+                                logError('SESSION_ID decoded but missing noiseKey. Got: ' + lastTry.substring(0,100), '❌');
+                                fs.mkdirSync(__dirname + '/sessions', { recursive: true });
+                            }
+                        } catch(le) {
+                            logError('SESSION_ID is invalid: ' + le.message, '❌');
+                            fs.mkdirSync(__dirname + '/sessions', { recursive: true });
+                        }
                     }
                 } catch (e) {
                     logError(`Failed to process SESSION_ID: ${e.message}`, '❌');
