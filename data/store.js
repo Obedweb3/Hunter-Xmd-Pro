@@ -5,6 +5,15 @@ const { DataTypes } = require('sequelize');
 const { DATABASE } = require('../lib/database');
 const storeDir = path.join(process.cwd(), 'store');
 
+/**
+ * Reads a JSON file and parses its content.
+ *
+ * This function constructs the file path using the provided filename and the predefined store directory.
+ * It attempts to read the file asynchronously and parse its content as JSON.
+ * If an error occurs during reading or parsing, it returns an empty array.
+ *
+ * @param {string} file - The name of the JSON file to read.
+ */
 const readJSON = async (file) => {
   try {
     const filePath = path.join(storeDir, file);
@@ -15,12 +24,25 @@ const readJSON = async (file) => {
   }
 };
 
+/**
+ * Writes JSON data to a specified file.
+ */
 const writeJSON = async (file, data) => {
   const filePath = path.join(storeDir, file);
   await fs.mkdir(storeDir, { recursive: true });
   await fs.writeFile(filePath, JSON.stringify(data, null, 2));
 };
 
+/**
+ * Save a contact's information to a JSON file.
+ *
+ * This function checks if the provided jid and name are valid. If valid, it reads the existing contacts from 'contact.json',
+ * updates the contact's name if the jid already exists, or adds a new contact if it does not. Finally, it writes the updated
+ * contacts back to the JSON file.
+ *
+ * @param jid - The JID of the contact to save.
+ * @param name - The name of the contact to save.
+ */
 const saveContact = async (jid, name) => {
   if (!jid || !name || isJidGroup(jid) || isJidBroadcast(jid) || isJidNewsletter(jid)) return;
   const contacts = await readJSON('contact.json');
@@ -59,18 +81,37 @@ const saveMessage = async (message) => {
   await writeJSON('message.json', messages);
 };
 
+/**
+ * Loads a message by its ID from a JSON file.
+ *
+ * This function checks if the provided ID is valid. If it is, it reads the messages from 'message.json'
+ * and searches for a message that matches the given ID. If found, it returns the message; otherwise, it returns null.
+ *
+ * @param {string} id - The ID of the message to load.
+ */
 const loadMessage = async (id) => {
   if (!id) return null;
   const messages = await readJSON('message.json');
   return messages.find((msg) => msg.id === id) || null;
 };
 
+/**
+ * Retrieves the name associated with a given JID from contacts.
+ */
 const getName = async (jid) => {
   const contacts = await readJSON('contact.json');
   const contact = contacts.find((contact) => contact.jid === jid);
   return contact ? contact.name : jid.split('@')[0].replace(/_/g, ' ');
 };
 
+/**
+ * Save metadata for a specified group.
+ *
+ * This function checks if the provided jid is a valid group identifier. It retrieves the group's metadata using the client, formats the relevant fields, and updates or adds the metadata to a JSON file. Additionally, it extracts participant information and saves it to a separate JSON file. The function handles asynchronous operations for reading and writing files.
+ *
+ * @param jid - The identifier of the group whose metadata is to be saved.
+ * @param client - The client instance used to fetch the group metadata.
+ */
 const saveGroupMetadata = async (jid, client) => {
   if (!isJidGroup(jid)) return;
   const groupMetadata = await client.groupMetadata(jid);
@@ -113,6 +154,13 @@ const saveGroupMetadata = async (jid, client) => {
   await writeJSON(`${jid}_participants.json`, participants);
 };
 
+/**
+ * Retrieves metadata for a specified group.
+ *
+ * This function checks if the provided jid is a valid group identifier. If valid, it reads the group metadata from 'metadata.json' and searches for the corresponding entry. If found, it also retrieves the participants' data from a separate JSON file named after the jid. The function returns an object that combines the metadata with the participants' information.
+ *
+ * @param {string} jid - The JID of the group whose metadata is to be retrieved.
+ */
 const getGroupMetadata = async (jid) => {
   if (!isJidGroup(jid)) return null;
   const metadataList = await readJSON('metadata.json');
@@ -122,6 +170,14 @@ const getGroupMetadata = async (jid) => {
   const participants = await readJSON(`${jid}_participants.json`);
   return { ...metadata, participants };
 };
+/**
+ * Save the count of messages sent by a user in a group or individual chat.
+ *
+ * The function first checks if the message and its sender are valid. It then reads the current message counts from 'message_count.json', updates the count for the sender if they already exist, or adds a new record if they do not. Finally, it writes the updated counts back to the JSON file.
+ *
+ * @param message - The message object containing details about the sender and the chat.
+ * @returns {Promise<void>} A promise that resolves when the message count is saved.
+ */
 const saveMessageCount = async (message) => {
   if (!message) return;
   const jid = message.key.remoteJid;
@@ -154,6 +210,13 @@ const getInactiveGroupMembers = async (jid) => {
   return inactiveMembers.map((member) => member.id);
 };
 
+/**
+ * Retrieves the message count for members of a specified group.
+ *
+ * This function checks if the provided jid is a valid group identifier. If it is, it reads the message counts from a JSON file, filters the records to include only those related to the specified group with a positive count, and sorts them in descending order. Finally, it maps over the filtered records to create an array of objects containing the sender's information, their name, and the message count.
+ *
+ * @param {string} jid - The JID of the group whose members' message counts are to be retrieved.
+ */
 const getGroupMembersMessageCount = async (jid) => {
   if (!isJidGroup(jid)) return [];
   const messageCounts = await readJSON('message_count.json');

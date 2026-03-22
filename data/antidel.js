@@ -17,6 +17,9 @@ async function getAnti() {
     }
 }
 
+/**
+ * Sets the anti-delete status by writing to a file.
+ */
 async function setAnti(status) {
     try {
         fs.writeFileSync(ANTI_DEL_FILE, JSON.stringify({ enabled: status }, null, 2));
@@ -29,6 +32,9 @@ async function setAnti(status) {
 
 // Stub functions for compatibility
 const AntiDelDB = { get: getAnti, set: setAnti };
+/**
+ * Initializes anti-delete settings.
+ */
 const initializeAntiDeleteSettings = async () => true;
 const getAllAntiDeleteSettings = async () => ({ enabled: await getAnti() });
 

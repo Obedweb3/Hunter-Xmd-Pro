@@ -19,6 +19,17 @@ class StickerConverter {
         }
     }
 
+    /**
+     * Converts a sticker buffer into an image file.
+     *
+     * This function saves the provided sticker buffer to a temporary file,
+     * then uses the fluent-ffmpeg library to convert the sticker into a PNG image.
+     * After conversion, it reads the resulting image file and returns its content.
+     * The function also handles cleanup of temporary files in a finally block,
+     * ensuring that both the sticker and output image files are deleted.
+     *
+     * @param {Buffer} stickerBuffer - The buffer containing the sticker data to be converted.
+     */
     async convertStickerToImage(stickerBuffer) {
         const tempPath = path.join(this.tempDir, `sticker_${Date.now()}.webp`);
         const outputPath = path.join(this.tempDir, `image_${Date.now()}.png`);
