@@ -1,37 +1,25 @@
-const { cmd } = require('../command');
+const config = require('../config')
+const { cmd, commands } = require('../command')
+const { getBuffer, getGroupAdmins, getRandom, h2k, isUrl, Json, runtime, sleep, fetchJson} = require('../lib/functions')
 
 cmd({
     pattern: "mute",
-    alias: ["closegc"],
-    desc: "Mute the group (only admins can send)",
-    category: "group",
+    alias: ["groupmute"],
     react: "🔇",
-    filename: __filename
-},
-async (conn, mek, m, { from, isGroup, isBotAdmins, isAdmins, isOwner, isCreator, reply }) => {
-    if (!isGroup) return reply("❌ Group only!");
-    if (!isAdmins && !isOwner && !isCreator) return reply("❌ Admins only!");
-    if (!isBotAdmins) return reply("❌ Make me admin first!");
-    try {
-        await conn.groupSettingUpdate(from, 'announcement');
-        reply("🔇 *Group Muted!*\nOnly admins can send messages now.");
-    } catch(e) { reply(`❌ Failed: ${e.message}`); }
-});
-
-cmd({
-    pattern: "unmute",
-    alias: ["opengc"],
-    desc: "Unmute the group (everyone can send)",
+    desc: "Mute the group (Only admins can send messages).",
     category: "group",
-    react: "🔊",
     filename: __filename
-},
-async (conn, mek, m, { from, isGroup, isBotAdmins, isAdmins, isOwner, isCreator, reply }) => {
-    if (!isGroup) return reply("❌ Group only!");
-    if (!isAdmins && !isOwner && !isCreator) return reply("❌ Admins only!");
-    if (!isBotAdmins) return reply("❌ Make me admin first!");
+},           
+async (conn, mek, m, { from, isGroup, senderNumber, isAdmins, isBotAdmins, reply }) => {
     try {
-        await conn.groupSettingUpdate(from, 'not_announcement');
-        reply("🔊 *Group Unmuted!*\nEveryone can send messages now.");
-    } catch(e) { reply(`❌ Failed: ${e.message}`); }
+        if (!isGroup) return reply("❌ This command can only be used in groups.");
+        if (!isAdmins) return reply("❌ Only group admins can use this command.");
+        if (!isBotAdmins) return reply("❌ I need to be an admin to mute the group.");
+
+        await conn.groupSettingUpdate(from, "announcement");
+        reply("✅ Group has been muted. Only admins can send messages.");
+    } catch (e) {
+        console.error("Error muting group:", e);
+        reply("❌ Failed to mute the group. Please try again.");
+    }
 });

@@ -1,226 +1,319 @@
-const axios = require('axios');
-const { cmd } = require('../command');
+const { fetchJson } = require("../lib/functions");
+const { downloadTiktok } = require("@mrnima/tiktok-downloader");
+const { facebook } = require("@mrnima/facebook-downloader");
+const cheerio = require("cheerio");
+const { igdl } = require("ruhend-scraper");
+const axios = require("axios");
+const { cmd, commands } = require('../command');
 
-const IMG = 'https://files.catbox.moe/xka13x.jpg';
-const FOOTER = '> ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴏʙᴇᴅ ᴛᴇᴄʜ';
-
-// =================== TWITTER ===================
 cmd({
-    pattern: "twitter",
-    alias: ["tweet", "twdl", "xdl"],
-    desc: "Download Twitter/X videos",
-    category: "download",
-    react: "🐦",
-    filename: __filename
-},
-async (conn, mek, m, { from, q, reply }) => {
-    try {
-        if (!q) return reply('❌ *Usage:* .twitter [url]\n\n*Example:* .twitter https://x.com/...');
-
-        await conn.sendMessage(from, { react: { text: '⏳', key: mek.key } });
-
-        let dlUrl, title;
-        const apis = [
-            async () => {
-                const res = await axios.get(`https://api.siputzx.my.id/api/d/twitter?url=${encodeURIComponent(q)}`, { timeout: 15000 });
-                if (res.data?.data?.url) return { url: res.data.data.url, title: res.data.data.description || 'Twitter Video' };
-            },
-            async () => {
-                const res = await axios.get(`https://api.giftedtech.web.id/api/download/twitterdl?apikey=gifted&url=${encodeURIComponent(q)}`, { timeout: 15000 });
-                if (res.data?.result?.url) return { url: res.data.result.url, title: res.data.result.description || 'Twitter Video' };
-            },
-            async () => {
-                const res = await axios.get(`https://api.ryzendesu.vip/api/downloader/twitter?url=${encodeURIComponent(q)}`, { timeout: 15000 });
-                if (res.data?.url || res.data?.downloadUrl) return { url: res.data.url || res.data.downloadUrl, title: 'Twitter Video' };
-            }
-        ];
-
-        for (const api of apis) {
-            try { const r = await api(); if (r?.url) { dlUrl = r.url; title = r.title; break; } } catch (e) {}
-        }
-
-        if (!dlUrl) return reply('❌ Failed to download! Try another URL.');
-
-        await conn.sendMessage(from, {
-            video: { url: dlUrl },
-            caption: `🐦 *Twitter Downloader*\n\n📖 ${title}\n\n${FOOTER}`
-        }, { quoted: mek });
-
-        await conn.sendMessage(from, { react: { text: '✅', key: mek.key } });
-    } catch (e) {
-        reply(`❌ Error: ${e.message}`);
+  pattern: "ig2",
+  alias: ["insta2", "Instagram2"],
+  desc: "To download Instagram videos.",
+  react: "🎥",
+  category: "download",
+  filename: __filename
+}, async (conn, m, store, { from, q, reply }) => {
+  try {
+    if (!q || !q.startsWith("http")) {
+      return reply("❌ Please provide a valid Instagram link.");
     }
+
+    await conn.sendMessage(from, {
+      react: { text: "⏳", key: m.key }
+    });
+
+    const response = await axios.get(`https://api-lite.silvatechinc.my.id//instagram?url=${q}`);
+    const data = response.data;
+
+    if (!data || data.status !== 200 || !data.downloadUrl) {
+      return reply("⚠️ Failed to fetch Instagram video. Please check the link and try again.");
+    }
+
+    await conn.sendMessage(from, {
+      video: { url: data.downloadUrl },
+      mimetype: "video/mp4",
+      caption: "📥 *Instagram Video Downloaded Successfully!*"
+    }, { quoted: m });
+
+  } catch (error) {
+    console.error("Error:", error);
+    reply("❌ An error occurred while processing your request. Please try again.");
+  }
 });
 
-// =================== INSTAGRAM ===================
+
+// twitter-dl
+
 cmd({
-    pattern: "ig2",
-    alias: ["insta2", "igdl2"],
-    desc: "Download Instagram (alternate method)",
-    category: "download",
-    react: "📸",
-    filename: __filename
-},
-async (conn, mek, m, { from, q, reply }) => {
-    try {
-        if (!q || !q.includes('instagram.com')) return reply('❌ .ig2 [instagram url]');
-        await conn.sendMessage(from, { react: { text: '⏳', key: mek.key } });
+  pattern: "twitter",
+  alias: ["tweet", "twdl"],
+  desc: "Download Twitter videos",
+  category: "download",
+  filename: __filename
+}, async (conn, m, store, {
+  from,
+  quoted,
+  q,
+  reply
+}) => {
+  try {
+    if (!q || !q.startsWith("https://")) {
+      return conn.sendMessage(from, { text: "❌ Please provide a valid Twitter URL." }, { quoted: m });
+    }
 
-        const res = await axios.get(`https://api.giftedtech.web.id/api/download/instagramdl?apikey=gifted&url=${encodeURIComponent(q)}`, { timeout: 15000 });
-        const items = res.data?.result;
-        if (!items?.length) return reply('❌ Nothing found!');
+    await conn.sendMessage(from, {
+      react: { text: '⏳', key: m.key }
+    });
 
-        for (const item of items.slice(0, 3)) {
-            if (item.type === 'image') {
-                await conn.sendMessage(from, { image: { url: item.url }, caption: `📸 Instagram Photo\n${FOOTER}` }, { quoted: mek });
-            } else {
-                await conn.sendMessage(from, { video: { url: item.url }, caption: `🎬 Instagram Video\n${FOOTER}` }, { quoted: mek });
-            }
+    const response = await axios.get(`https://api-lite.silvatechinc.my.id/download/twitter?url=${q}`);
+    const data = response.data;
+
+    if (!data || !data.status || !data.result) {
+      return reply("⚠️ Failed to retrieve Twitter video. Please check the link and try again.");
+    }
+
+    const { desc, thumb, video_sd, video_hd } = data.result;
+
+    const caption = `╭━━━〔 *TWITTER DOWNLOADER* 〕━━━⊷\n`
+      + `┃▸ *Description:* ${desc || "No description"}\n`
+      + `╰━━━⪼\n\n`
+      + `📹 *Download Options:*\n`
+      + `1️⃣  *SD Quality*\n`
+      + `2️⃣  *HD Quality*\n`
+      + `🎵 *Audio Options:*\n`
+      + `3️⃣  *Audio*\n`
+      + `4️⃣  *Document*\n`
+      + `5️⃣  *Voice*\n\n`
+      + `📌 *Reply with the number to download your choice.*`;
+
+    const sentMsg = await conn.sendMessage(from, {
+      image: { url: thumb },
+      caption: caption
+    }, { quoted: m });
+
+    const messageID = sentMsg.key.id;
+
+    conn.ev.on("messages.upsert", async (msgData) => {
+      const receivedMsg = msgData.messages[0];
+      if (!receivedMsg.message) return;
+
+      const receivedText = receivedMsg.message.conversation || receivedMsg.message.extendedTextMessage?.text;
+      const senderID = receivedMsg.key.remoteJid;
+      const isReplyToBot = receivedMsg.message.extendedTextMessage?.contextInfo?.stanzaId === messageID;
+
+      if (isReplyToBot) {
+        await conn.sendMessage(senderID, {
+          react: { text: '⬇️', key: receivedMsg.key }
+        });
+
+        switch (receivedText) {
+          case "1":
+            await conn.sendMessage(senderID, {
+              video: { url: video_sd },
+              caption: "📥 *Downloaded in SD Quality*"
+            }, { quoted: receivedMsg });
+            break;
+
+          case "2":
+            await conn.sendMessage(senderID, {
+              video: { url: video_hd },
+              caption: "📥 *Downloaded in HD Quality*"
+            }, { quoted: receivedMsg });
+            break;
+
+          case "3":
+            await conn.sendMessage(senderID, {
+              audio: { url: video_sd },
+              mimetype: "audio/mpeg"
+            }, { quoted: receivedMsg });
+            break;
+
+          case "4":
+            await conn.sendMessage(senderID, {
+              document: { url: video_sd },
+              mimetype: "audio/mpeg",
+              fileName: "Twitter_Audio.mp3",
+              caption: "📥 *Audio Downloaded as Document*"
+            }, { quoted: receivedMsg });
+            break;
+
+          case "5":
+            await conn.sendMessage(senderID, {
+              audio: { url: video_sd },
+              mimetype: "audio/mp4",
+              ptt: true
+            }, { quoted: receivedMsg });
+            break;
+
+          default:
+            reply("❌ Invalid option! Please reply with 1, 2, 3, 4, or 5.");
         }
-        await conn.sendMessage(from, { react: { text: '✅', key: mek.key } });
-    } catch (e) { reply(`❌ Error: ${e.message}`); }
+      }
+    });
+
+  } catch (error) {
+    console.error("Error:", error);
+    reply("❌ An error occurred while processing your request. Please try again.");
+  }
 });
 
-// =================== MEDIAFIRE ===================
+// MediaFire-dl
+
 cmd({
-    pattern: "mediafire",
-    alias: ["mfire", "mf"],
-    desc: "Download MediaFire files",
-    category: "download",
-    react: "🔥",
-    filename: __filename
-},
-async (conn, mek, m, { from, q, reply }) => {
-    try {
-        if (!q) return reply('❌ .mediafire [mediafire url]');
-        await conn.sendMessage(from, { react: { text: '⏳', key: mek.key } });
+  pattern: "mediafire",
+  alias: ["mfire"],
+  desc: "To download MediaFire files.",
+  react: "🎥",
+  category: "download",
+  filename: __filename
+}, async (conn, m, store, {
+  from,
+  quoted,
+  q,
+  reply
+}) => {
+  try {
+    if (!q) {
+      return reply("❌ Please provide a valid MediaFire link.");
+    }
 
-        const apis = [
-            async () => {
-                const res = await axios.get(`https://api.siputzx.my.id/api/d/mediafire?url=${encodeURIComponent(q)}`, { timeout: 15000 });
-                if (res.data?.data?.url) return res.data.data;
-            },
-            async () => {
-                const res = await axios.get(`https://api.giftedtech.web.id/api/download/mediafire?apikey=gifted&url=${encodeURIComponent(q)}`, { timeout: 15000 });
-                if (res.data?.result?.download_url) return { url: res.data.result.download_url, name: res.data.result.filename, type: res.data.result.filetype };
-            }
-        ];
+    await conn.sendMessage(from, {
+      react: { text: "⏳", key: m.key }
+    });
 
-        let data;
-        for (const a of apis) { try { data = await a(); if (data?.url) break; } catch (e) {} }
-        if (!data?.url) return reply('❌ Download failed!');
+    const response = await axios.get(`https://www.dark-yasiya-api.site/download/mfire?url=${q}`);
+    const data = response.data;
 
-        await conn.sendMessage(from, {
-            document: { url: data.url },
-            fileName: data.name || data.fileName || 'mediafire_file',
-            mimetype: data.type || data.mimetype || 'application/octet-stream',
-            caption: `🔥 *MediaFire Download*\n📄 ${data.name || 'File'}\n${FOOTER}`
-        }, { quoted: mek });
+    if (!data || !data.status || !data.result || !data.result.dl_link) {
+      return reply("⚠️ Failed to fetch MediaFire download link. Ensure the link is valid and public.");
+    }
 
-        await conn.sendMessage(from, { react: { text: '✅', key: mek.key } });
-    } catch (e) { reply(`❌ Error: ${e.message}`); }
+    const { dl_link, fileName, fileType } = data.result;
+    const file_name = fileName || "mediafire_download";
+    const mime_type = fileType || "application/octet-stream";
+
+    await conn.sendMessage(from, {
+      react: { text: "⬆️", key: m.key }
+    });
+
+    const caption = `╭━━━〔 *MEDIAFIRE DOWNLOADER* 〕━━━⊷\n`
+      + `┃▸ *File Name:* ${file_name}\n`
+      + `┃▸ *File Type:* ${mime_type}\n`
+      + `╰━━━⪼\n\n`
+      + `📥 *Downloading your file...*`;
+
+    await conn.sendMessage(from, {
+      document: { url: dl_link },
+      mimetype: mime_type,
+      fileName: file_name,
+      caption: caption
+    }, { quoted: m });
+
+  } catch (error) {
+    console.error("Error:", error);
+    reply("❌ An error occurred while processing your request. Please try again.");
+  }
 });
 
-// =================== APK ===================
+// apk-dl
+
 cmd({
-    pattern: "apk",
-    alias: ["apkdl"],
-    desc: "Download Android APK",
-    category: "download",
-    react: "📱",
-    filename: __filename
-},
-async (conn, mek, m, { from, q, reply }) => {
-    try {
-        if (!q) return reply('❌ .apk [app name]\n\n*Example:* .apk WhatsApp');
-        await conn.sendMessage(from, { react: { text: '⏳', key: mek.key } });
+  pattern: "apk",
+  desc: "Download APK from Aptoide.",
+  category: "download",
+  filename: __filename
+}, async (conn, m, store, {
+  from,
+  quoted,
+  q,
+  reply
+}) => {
+  try {
+    if (!q) {
+      return reply("❌ Please provide an app name to search.");
+    }
 
-        const res = await axios.get(`http://ws75.aptoide.com/api/7/apps/search/query=${encodeURIComponent(q)}/limit=1`, { timeout: 15000 });
-        const app = res.data?.datalist?.list?.[0];
-        if (!app) return reply('❌ App not found!');
+    await conn.sendMessage(from, { react: { text: "⏳", key: m.key } });
 
-        const size = (app.size / 1048576).toFixed(2);
-        const caption = `📱 *APK Downloader*\n\n📦 *Name:* ${app.name}\n🏋 *Size:* ${size} MB\n👨‍💻 *Dev:* ${app.developer?.name}\n📅 *Updated:* ${app.updated}\n\n${FOOTER}`;
+    const apiUrl = `http://ws75.aptoide.com/api/7/apps/search/query=${q}/limit=1`;
+    const response = await axios.get(apiUrl);
+    const data = response.data;
 
-        await conn.sendMessage(from, {
-            document: { url: app.file.path_alt },
-            fileName: `${app.name}.apk`,
-            mimetype: 'application/vnd.android.package-archive',
-            caption
-        }, { quoted: mek });
+    if (!data || !data.datalist || !data.datalist.list.length) {
+      return reply("⚠️ No results found for the given app name.");
+    }
 
-        await conn.sendMessage(from, { react: { text: '✅', key: mek.key } });
-    } catch (e) { reply(`❌ Error: ${e.message}`); }
+    const app = data.datalist.list[0];
+    const appSize = (app.size / 1048576).toFixed(2); // Convert bytes to MB
+
+    const caption = `╭━━━〔 *APK Downloader* 〕━━━┈⊷
+┃ 📦 *Name:* ${app.name}
+┃ 🏋 *Size:* ${appSize} MB
+┃ 📦 *Package:* ${app.package}
+┃ 📅 *Updated On:* ${app.updated}
+┃ 👨‍💻 *Developer:* ${app.developer.name}
+╰━━━━━━━━━━━━━━━┈⊷
+🔗 *Powered By ʜᴜɴᴛᴇʀ xᴍᴅ*`;
+
+    await conn.sendMessage(from, { react: { text: "⬆️", key: m.key } });
+
+    await conn.sendMessage(from, {
+      document: { url: app.file.path_alt },
+      fileName: `${app.name}.apk`,
+      mimetype: "application/vnd.android.package-archive",
+      caption: caption
+    }, { quoted: m });
+
+    await conn.sendMessage(from, { react: { text: "✅", key: m.key } });
+
+  } catch (error) {
+    console.error("Error:", error);
+    reply("❌ An error occurred while fetching the APK. Please try again.");
+  }
 });
 
-// =================== GOOGLE DRIVE ===================
+// G-Drive-DL
+
 cmd({
-    pattern: "gdrive",
-    alias: ["gdl"],
-    desc: "Download Google Drive files",
-    category: "download",
-    react: "🌐",
-    filename: __filename
-},
-async (conn, mek, m, { from, q, reply }) => {
-    try {
-        if (!q) return reply('❌ .gdrive [drive url]');
-        await conn.sendMessage(from, { react: { text: '⏳', key: mek.key } });
+  pattern: "gdrive",
+  desc: "Download Google Drive files.",
+  react: "🌐",
+  category: "download",
+  filename: __filename
+}, async (conn, m, store, {
+  from,
+  quoted,
+  q,
+  reply
+}) => {
+  try {
+    if (!q) {
+      return reply("❌ Please provide a valid Google Drive link.");
+    }
 
-        const res = await axios.get(`https://api.giftedtech.web.id/api/downloader/gdrive?apikey=gifted&url=${encodeURIComponent(q)}`, { timeout: 20000 });
-        const result = res.data?.result;
-        if (!result?.downloadUrl) return reply('❌ Could not get download link!');
+    await conn.sendMessage(from, { react: { text: "⬇️", key: m.key } });
 
-        await conn.sendMessage(from, {
-            document: { url: result.downloadUrl },
-            fileName: result.fileName || 'gdrive_file',
-            mimetype: result.mimetype || 'application/octet-stream',
-            caption: `🌐 *Google Drive Download*\n📄 ${result.fileName || 'File'}\n${FOOTER}`
-        }, { quoted: mek });
+    const apiUrl = `https://api.fgmods.xyz/api/downloader/gdrive?url=${q}&apikey=mnp3grlZ`;
+    const response = await axios.get(apiUrl);
+    const downloadUrl = response.data.result.downloadUrl;
 
-        await conn.sendMessage(from, { react: { text: '✅', key: mek.key } });
-    } catch (e) { reply(`❌ Error: ${e.message}`); }
-});
+    if (downloadUrl) {
+      await conn.sendMessage(from, { react: { text: "⬆️", key: m.key } });
 
-// =================== PINTEREST ===================
-cmd({
-    pattern: "pindl",
-    alias: ["pins", "pinterest", "pin"],
-    desc: "Download Pinterest images/videos",
-    category: "download",
-    react: "📌",
-    filename: __filename
-},
-async (conn, mek, m, { from, q, reply }) => {
-    try {
-        if (!q) return reply('❌ .pindl [pinterest url]');
-        await conn.sendMessage(from, { react: { text: '⏳', key: mek.key } });
+      await conn.sendMessage(from, {
+        document: { url: downloadUrl },
+        mimetype: response.data.result.mimetype,
+        fileName: response.data.result.fileName,
+        caption: "*© Powered By ʜᴜɴᴛᴇʀ xᴍᴅ*"
+      }, { quoted: m });
 
-        const apis = [
-            async () => {
-                const res = await axios.get(`https://api.giftedtech.web.id/api/download/pinterestdl?apikey=gifted&url=${encodeURIComponent(q)}`, { timeout: 15000 });
-                return res.data?.result?.media;
-            },
-            async () => {
-                const res = await axios.get(`https://api.siputzx.my.id/api/d/pinterest?url=${encodeURIComponent(q)}`, { timeout: 15000 });
-                if (res.data?.data?.url) return [{ download_url: res.data.data.url, type: res.data.data.type }];
-            }
-        ];
-
-        let media;
-        for (const a of apis) { try { media = await a(); if (media?.length) break; } catch (e) {} }
-        if (!media?.length) return reply('❌ No media found!');
-
-        const item = media[0];
-        const url = item.download_url || item.url;
-        const isVideo = item.type?.includes('video') || url?.includes('.mp4');
-
-        if (isVideo) {
-            await conn.sendMessage(from, { video: { url }, caption: `📌 *Pinterest Video*\n${FOOTER}` }, { quoted: mek });
-        } else {
-            await conn.sendMessage(from, { image: { url }, caption: `📌 *Pinterest Image*\n${FOOTER}` }, { quoted: mek });
-        }
-
-        await conn.sendMessage(from, { react: { text: '✅', key: mek.key } });
-    } catch (e) { reply(`❌ Error: ${e.message}`); }
-});
+      await conn.sendMessage(from, { react: { text: "✅", key: m.key } });
+    } else {
+      return reply("⚠️ No download URL found. Please check the link and try again.");
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    reply("❌ An error occurred while fetching the Google Drive file. Please try again.");
+  }
+}); 

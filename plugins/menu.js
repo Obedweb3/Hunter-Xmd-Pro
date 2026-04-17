@@ -1,239 +1,420 @@
 const config = require('../config');
 const { cmd, commands } = require('../command');
+const os = require("os");
 const { runtime } = require('../lib/functions');
-const os = require('os');
 
-const IMG = 'https://files.catbox.moe/xka13x.jpg';
-const FOOTER = '© ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴏʙᴇᴅ ᴛᴇᴄʜ';
-const NL = {
-    newsletterJid: '120363416335506023@newsletter',
-    newsletterName: 'ᴏʙᴇᴅᴛᴇᴄʜ',
-    serverMessageId: 143
-};
-
-const subMenus = {
-    dlmenu: {
-        emoji: '📥', title: 'DOWNLOAD MENU',
-        sections: [
-            {
-                title: '🎵 Music & Video',
-                rows: [
-                    { title: '.play [song]', rowId: 'play', description: 'Download YouTube audio as MP3' },
-                    { title: '.video [name]', rowId: 'video', description: 'Download YouTube video MP4' },
-                    { title: '.spotify [url]', rowId: 'spotify', description: 'Download Spotify track' },
-                    { title: '.ytmp3 [url]', rowId: 'ytmp3', description: 'YouTube to MP3 by URL' },
-                ]
-            },
-            {
-                title: '📱 Social Media',
-                rows: [
-                    { title: '.tiktok [url]', rowId: 'tiktok', description: 'TikTok no watermark video' },
-                    { title: '.fb [url]', rowId: 'fb', description: 'Facebook video SD/HD' },
-                    { title: '.ig [url]', rowId: 'ig', description: 'Instagram photo/video/reel' },
-                    { title: '.twitter [url]', rowId: 'twitter', description: 'Twitter/X video download' },
-                ]
-            },
-            {
-                title: '🔗 Other Downloads',
-                rows: [
-                    { title: '.apk [name]', rowId: 'apk', description: 'Download Android APK' },
-                    { title: '.mediafire [url]', rowId: 'mediafire', description: 'Download MediaFire file' },
-                    { title: '.gdrive [url]', rowId: 'gdrive', description: 'Download Google Drive file' },
-                    { title: '.pindl [url]', rowId: 'pindl', description: 'Pinterest image/video' },
-                ]
-            }
-        ]
-    },
-    groupmenu: {
-        emoji: '👥', title: 'GROUP MENU',
-        sections: [
-            {
-                title: '👮 Admin Commands',
-                rows: [
-                    { title: '.kick / .remove @user', rowId: 'kick', description: 'Remove member from group' },
-                    { title: '.promote @user', rowId: 'promote', description: 'Make member admin' },
-                    { title: '.demote @user', rowId: 'demote', description: 'Remove admin status' },
-                    { title: '.add [number]', rowId: 'add', description: 'Add member to group' },
-                ]
-            },
-            {
-                title: '⚙️ Group Settings',
-                rows: [
-                    { title: '.mute / .unmute', rowId: 'mute', description: 'Toggle group send rights' },
-                    { title: '.lockgc / .unlockgc', rowId: 'lockgc', description: 'Lock/unlock group settings' },
-                    { title: '.updategname [name]', rowId: 'updategname', description: 'Change group name' },
-                    { title: '.updategdesc [text]', rowId: 'updategdesc', description: 'Change group description' },
-                ]
-            },
-            {
-                title: '📢 Tags & Info',
-                rows: [
-                    { title: '.tagall / .hidetag', rowId: 'tagall', description: 'Tag all members' },
-                    { title: '.tagadmins', rowId: 'tagadmins', description: 'Tag only admins' },
-                    { title: '.ginfo', rowId: 'ginfo', description: 'Show group information' },
-                    { title: '.grouplink / .revoke', rowId: 'grouplink', description: 'Get/reset invite link' },
-                ]
-            }
-        ]
-    },
-    funmenu: {
-        emoji: '🎭', title: 'FUN MENU',
-        sections: [
-            {
-                title: '😄 Games & Fun',
-                rows: [
-                    { title: '.ship @user', rowId: 'ship', description: 'Compatibility meter with someone' },
-                    { title: '.truth / .dare', rowId: 'truth', description: 'Truth or dare game' },
-                    { title: '.joke', rowId: 'joke', description: 'Random joke' },
-                    { title: '.quote', rowId: 'quote', description: 'Inspirational quote' },
-                ]
-            },
-            {
-                title: '🖼️ Image Fun',
-                rows: [
-                    { title: '.wanted @user', rowId: 'wanted', description: 'Wanted poster with profile pic' },
-                    { title: '.jail @user', rowId: 'jail', description: 'Jail filter on photo' },
-                    { title: '.blur / .invert', rowId: 'blur', description: 'Image effects' },
-                    { title: '.fancy [text]', rowId: 'fancy', description: 'Fancy text styles' },
-                ]
-            }
-        ]
-    },
-    aimenu: {
-        emoji: '🤖', title: 'AI MENU',
-        sections: [
-            {
-                title: '🧠 AI Tools',
-                rows: [
-                    { title: '.gpt [question]', rowId: 'gpt', description: 'Ask ChatGPT anything' },
-                    { title: '.imagine [prompt]', rowId: 'imagine', description: 'Generate AI image' },
-                    { title: '.define [word]', rowId: 'define', description: 'Get word definition' },
-                    { title: '.tts [text]', rowId: 'tts', description: 'Text to speech audio' },
-                ]
-            }
-        ]
-    },
-    ownermenu: {
-        emoji: '⚙️', title: 'OWNER MENU',
-        sections: [
-            {
-                title: '🔧 Bot Control',
-                rows: [
-                    { title: '.autobio on/off', rowId: 'autobio', description: 'Toggle auto bio changer' },
-                    { title: '.antidelete on/off', rowId: 'antidelete', description: 'Toggle anti-delete protection' },
-                    { title: '.broadcast [msg]', rowId: 'broadcast', description: 'Send message to all groups' },
-                    { title: '.mode public/private', rowId: 'mode', description: 'Change bot mode' },
-                ]
-            },
-            {
-                title: '👤 Profile',
-                rows: [
-                    { title: '.setbio [text]', rowId: 'setbio', description: 'Set custom bio manually' },
-                    { title: '.setpp [reply img]', rowId: 'setpp', description: 'Set bot profile picture' },
-                    { title: '.setname [name]', rowId: 'setname', description: 'Change bot display name' },
-                    { title: '.restart', rowId: 'restart', description: 'Restart the bot' },
-                ]
-            }
-        ]
-    }
-};
-
-// Register sub-menu commands
-for (const [key, data] of Object.entries(subMenus)) {
-    cmd({
-        pattern: key,
-        alias: [],
-        desc: `Show ${data.title}`,
-        category: 'menu',
-        react: data.emoji,
-        filename: __filename
-    },
-    async (conn, mek, m, { from, sender, pushname, reply }) => {
-        try {
-            const prefix = config.PREFIX;
-            try {
-                await conn.sendMessage(from, {
-                    text: `${data.emoji} *${data.title}*\n\n_Select a command from the list below:_\n\n> ${FOOTER}`,
-                    footer: FOOTER,
-                    title: `${data.emoji} ${data.title}`,
-                    buttonText: `📋 ${data.title}`,
-                    sections: data.sections
-                }, { quoted: mek });
-            } catch (e) {
-                // Fallback text menu
-                let txt = `${data.emoji} *${data.title}*\n\n`;
-                for (const section of data.sections) {
-                    txt += `*${section.title}*\n`;
-                    for (const row of section.rows) {
-                        txt += `• ${prefix}${row.rowId} - ${row.description}\n`;
-                    }
-                    txt += '\n';
-                }
-                txt += `> ${FOOTER}`;
-                await conn.sendMessage(from, { image: { url: IMG }, caption: txt, contextInfo: { forwardingScore: 999, isForwarded: true, forwardedNewsletterMessageInfo: NL } }, { quoted: mek });
-            }
-        } catch (e) { reply(`Error: ${e.message}`); }
-    });
-}
-
-// menu2 - smart interactive numbered menu
 cmd({
     pattern: "menu2",
-    alias: ["smartmenu", "m2"],
-    desc: "Interactive bot menu with buttons",
+    desc: "Show interactive menu system",
     category: "menu",
     react: "⚡",
     filename: __filename
-},
-async (conn, mek, m, { from, sender, pushname, reply }) => {
+}, async (conn, mek, m, { from, reply }) => {
     try {
-        await conn.sendMessage(from, { react: { text: '⏳', key: mek.key } });
-        const ram = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(1);
-        const uptime = runtime(process.uptime());
+        // Show loading reaction
+        await conn.sendMessage(from, {
+            react: { text: '⏳', key: mek.key }
+        });
 
-        try {
-            await conn.sendMessage(from, {
-                text: `⚡ *${config.BOT_NAME}*\n\n👋 Hey *${pushname || 'User'}!*\n\n📊 RAM: ${ram}MB | ⏰ ${uptime}\n🔧 Prefix: *${config.PREFIX}* | 🌐 Mode: *${config.MODE}*\n\n_Tap a button below to open a menu:_`,
-                footer: FOOTER,
-                title: `⚡ ${config.BOT_NAME}`,
-                buttonText: '📋 Open Menu',
-                sections: [
-                    {
-                        title: '🎯 Quick Access',
-                        rows: [
-                            { title: '📥 Downloads', rowId: `${config.PREFIX}dlmenu`, description: 'YT, TikTok, Spotify, FB, IG...' },
-                            { title: '👥 Group Tools', rowId: `${config.PREFIX}groupmenu`, description: 'Kick, promote, tag, welcome...' },
-                            { title: '🎭 Fun & Games', rowId: `${config.PREFIX}funmenu`, description: 'Ship, truth, dare, effects...' },
-                            { title: '🤖 AI Features', rowId: `${config.PREFIX}aimenu`, description: 'GPT, Image AI, TTS, Define...' },
-                        ]
-                    },
-                    {
-                        title: '🔧 More',
-                        rows: [
-                            { title: '⚙️ Owner Settings', rowId: `${config.PREFIX}ownermenu`, description: 'Autobio, antidelete, mode...' },
-                            { title: '📜 All Commands', rowId: `${config.PREFIX}allmenu`, description: 'View every single command' },
-                            { title: '⚡ Bot Status', rowId: `${config.PREFIX}alive`, description: 'Check if bot is alive' },
-                        ]
-                    }
-                ]
-            }, { quoted: mek });
-        } catch (listErr) {
-            // Fallback image menu
-            const menuCaption = `╔══════════════════════════╗\n║  ⚡ *${config.BOT_NAME}* ⚡\n╚══════════════════════════╝\n\n👋 *${pushname || 'User'}* | ⏰ ${uptime}\n\n╭─── 📋 *MENU CATEGORIES* ──╮\n│ 📥 *${config.PREFIX}dlmenu*   → Downloads\n│ 👥 *${config.PREFIX}groupmenu* → Group\n│ 🎭 *${config.PREFIX}funmenu*  → Fun\n│ 🤖 *${config.PREFIX}aimenu*   → AI Tools\n│ ⚙️  *${config.PREFIX}ownermenu* → Owner\n│ 📜 *${config.PREFIX}allmenu*  → All Cmds\n│ ⚡ *${config.PREFIX}alive*    → Status\n╰────────────────────────────╯\n\n> ${FOOTER}`;
+        const menuCaption = `╭━━━〔 *${config.BOT_NAME}* 〕━━━┈⊷
+┃♦️╭──────────────
+┃♦️│  *Owner :* ${config.OWNER_NAME}
+┃♦️│  *Baileys :* Multi Device
+┃♦️│  *Type :* NodeJs
+┃♦️│  *Platform :* vercel
+┃♦️│  *Mode :* [${config.MODE}]
+┃♦️│  *Prefix :* [${config.PREFIX}]
+┃♦️│  *Version :* 5.0.0 max
+┃♦️╰──────────────
+╰━━━━━━━━━━━━━━━┈⊷
+╭━━〔 *Menu List* 〕━━┈⊷
+┃♦️╭─────────────·๏
+┃♦️│1️⃣   *Download Menu*
+┃♦️│2️⃣   *Group Menu*
+┃♦️│3️⃣   *Fun Menu*
+┃♦️│4️⃣   *Owner Menu*
+┃♦️│5️⃣   *AI Menu*
+┃♦️│6️⃣   *Anime Menu*
+┃♦️│7️⃣   *Convert Menu*
+┃♦️│8️⃣   *Other Menu*
+┃♦️│9️⃣   *Reactions Menu*
+┃♦️│🔟   *Main Menu*
+┃◈╰───────────┈⊷
+╰──────────────┈⊷
+> ${config.DESCRIPTION}`;
 
-            await conn.sendMessage(from, {
-                image: { url: IMG }, caption: menuCaption,
-                contextInfo: { mentionedJid: [sender], forwardingScore: 999, isForwarded: true, forwardedNewsletterMessageInfo: NL }
-            }, { quoted: mek });
-        }
+        const contextInfo = {
+            mentionedJid: [m.sender],
+            forwardingScore: 999,
+            isForwarded: true,
+            forwardedNewsletterMessageInfo: {
+                newsletterJid: '120363416335506023@newsletter',
+                newsletterName: config.OWNER_NAME,
+                serverMessageId: 143
+            }
+        };
 
-        // Play menu audio
-        try {
-            await conn.sendMessage(from, { audio: { url: 'https://files.catbox.moe/62lnxc.mp3' }, mimetype: 'audio/mp3', ptt: true }, { quoted: mek });
-        } catch (e) {}
+        const sentMsg = await conn.sendMessage(
+            from,
+            {
+                image: { url: config.MENU_IMAGE_URL || 'https://files.catbox.moe/xka13x.jpg' },
+                caption: menuCaption,
+                contextInfo: contextInfo
+            },
+            { quoted: mek }
+        );
 
-        await conn.sendMessage(from, { react: { text: '⚡', key: mek.key } });
+        // Send menu audio only once
+        await conn.sendMessage(from, {
+            audio: { url: 'https://github.com/Obedweb3/ObedTech-data/raw/refs/heads/main/autovoice/menunew.m4a' },
+            mimetype: 'audio/mp4',
+            ptt: true,       
+        }, { quoted: mek });
+
+        const messageID = sentMsg.key.id;
+
+        // Complete menu data
+        const menuData = {
+            '1': {
+                title: "📥 *Download Menu* 📥",
+                content: `╭━━━〔 *Download Menu* 〕━━━┈⊷
+┃★╭──────────────
+┃★│ 🌐 *Social Media*
+┃★│ • facebook [url]
+┃★│ • mediafire [url]
+┃★│ • tiktok [url]
+┃★│ • twitter [url]
+┃★│ • Insta [url]
+┃★│ • apk [app]
+┃★│ • img [query]
+┃★│ • tt2 [url]
+┃★│ • pins [url]
+┃★│ • apk2 [app]
+┃★│ • fb2 [url]
+┃★│ • pinterest [url]
+┃★╰──────────────
+┃★╭──────────────
+┃★│ 🎵 *Music/Video*
+┃★│ • spotify [query]
+┃★│ • play [song]
+┃★│ • play2-10 [song]
+┃★│ • audio [url]
+┃★│ • video [url]
+┃★│ • video2-10 [url]
+┃★│ • ytmp3 [url]
+┃★│ • ytmp4 [url]
+┃★│ • song [name]
+┃★│ • darama [name]
+┃★╰──────────────
+╰━━━━━━━━━━━━━━━┈⊷
+> ${config.DESCRIPTION}`
+            },
+            '2': {
+                title: "👥 *Group Menu* 👥",
+                content: `╭━━━〔 *Group Menu* 〕━━━┈⊷
+┃★╭──────────────
+┃★│ 🛠️ *Management*
+┃★│ • grouplink
+┃★│ • kickall
+┃★│ • kickall2
+┃★│ • kickall3
+┃★│ • add @user
+┃★│ • remove @user
+┃★│ • kick @user
+┃★╰──────────────
+┃★╭──────────────
+┃★│ ⚡ *Admin Tools*
+┃★│ • promote @user
+┃★│ • demote @user
+┃★│ • dismiss 
+┃★│ • revoke
+┃★│ • mute [time]
+┃★│ • unmute
+┃★│ • lockgc
+┃★│ • unlockgc
+┃★╰──────────────
+┃★╭──────────────
+┃★│ 🏷️ *Tagging*
+┃★│ • tag @user
+┃★│ • hidetag [msg]
+┃★│ • tagall
+┃★│ • tagadmins
+┃★│ • invite
+┃★╰──────────────
+╰━━━━━━━━━━━━━━━┈⊷
+> ${config.DESCRIPTION}`
+            },
+            '3': {
+                title: "😄 *Fun Menu* 😄",
+                content: `╭━━━〔 *Fun Menu* 〕━━━┈⊷
+┃★╭──────────────
+┃★│ 🎭 *Interactive*
+┃★│ • shapar
+┃★│ • rate @user
+┃★│ • insult @user
+┃★│ • hack @user
+┃★│ • ship @user1 @user2
+┃★│ • character
+┃★│ • pickup
+┃★│ • joke
+┃★╰──────────────
+┃★╭──────────────
+┃★│ 😂 *Reactions*
+┃★│ • hrt
+┃★│ • hpy
+┃★│ • syd
+┃★│ • anger
+┃★│ • shy
+┃★│ • kiss
+┃★│ • mon
+┃★│ • cunfuzed
+┃★╰──────────────
+╰━━━━━━━━━━━━━━━┈⊷
+> ${config.DESCRIPTION}`
+            },
+            '4': {
+                title: "👑 *Owner Menu* 👑",
+                content: `╭━━━〔 *Owner Menu* 〕━━━┈⊷
+┃★╭──────────────
+┃★│ ⚠️ *Restricted*
+┃★│ • block @user
+┃★│ • unblock @user
+┃★│ • fullpp [img]
+┃★│ • setpp [img]
+┃★│ • restart
+┃★│ • shutdown
+┃★│ • updatecmd
+┃★╰──────────────
+┃★╭──────────────
+┃★│ ℹ️ *Info Tools*
+┃★│ • gjid
+┃★│ • jid @user
+┃★│ • listcmd
+┃★│ • allmenu
+┃★╰──────────────
+╰━━━━━━━━━━━━━━━┈⊷
+> ${config.DESCRIPTION}`
+            },
+            '5': {
+                title: "🤖 *AI Menu* 🤖",
+                content: `╭━━━〔 *AI Menu* 〕━━━┈⊷
+┃★╭──────────────
+┃★│ 💬 *Chat AI*
+┃★│ • ai [query]
+┃★│ • gpt3 [query]
+┃★│ • gpt2 [query]
+┃★│ • gptmini [query]
+┃★│ • gpt [query]
+┃★│ • meta [query]
+┃★╰──────────────
+┃★╭──────────────
+┃★│ 🖼️ *Image AI*
+┃★│ • imagine [text]
+┃★│ • imagine2 [text]
+┃★╰──────────────
+┃★╭──────────────
+┃★│ 🔍 *Specialized*
+┃★│ • blackbox [query]
+┃★│ • luma [query]
+┃★│ • dj [query]
+┃★│ • khan [query]
+┃★╰──────────────
+╰━━━━━━━━━━━━━━━┈⊷
+> ${config.DESCRIPTION}`
+            },
+            '6': {
+                title: "🎎 *Anime Menu* 🎎",
+                content: `╭━━━〔 *Anime Menu* 〕━━━┈⊷
+┃★╭──────────────
+┃★│ 🖼️ *Images*
+┃★│ • fack
+┃★│ • dog
+┃★│ • awoo
+┃★│ • garl
+┃★│ • waifu
+┃★│ • neko
+┃★│ • megnumin
+┃★│ • maid
+┃★│ • loli
+┃★╰──────────────
+┃★╭──────────────
+┃★│ 🎭 *Characters*
+┃★│ • animegirl
+┃★│ • animegirl1-5
+┃★│ • anime1-5
+┃★│ • foxgirl
+┃★│ • naruto
+┃★╰──────────────
+╰━━━━━━━━━━━━━━━┈⊷
+> ${config.DESCRIPTION}`
+            },
+            '7': {
+                title: "🔄 *Convert Menu* 🔄",
+                content: `╭━━━〔 *Convert Menu* 〕━━━┈⊷
+┃★╭──────────────
+┃★│ 🖼️ *Media*
+┃★│ • sticker [img]
+┃★│ • sticker2 [img]
+┃★│ • emojimix 😎+😂
+┃★│ • take [name,text]
+┃★│ • tomp3 [video]
+┃★╰──────────────
+┃★╭──────────────
+┃★│ 📝 *Text*
+┃★│ • fancy [text]
+┃★│ • tts [text]
+┃★│ • trt [text]
+┃★│ • base64 [text]
+┃★│ • unbase64 [text]
+┃★╰──────────────
+╰━━━━━━━━━━━━━━━┈⊷
+> ${config.DESCRIPTION}`
+            },
+            '8': {
+                title: "📌 *Other Menu* 📌",
+                content: `╭━━━〔 *Other Menu* 〕━━━┈⊷
+┃★╭──────────────
+┃★│ 🕒 *Utilities*
+┃★│ • timenow
+┃★│ • date
+┃★│ • count [num]
+┃★│ • calculate [expr]
+┃★│ • countx
+┃★╰──────────────
+┃★╭──────────────
+┃★│ 🎲 *Random*
+┃★│ • flip
+┃★│ • coinflip
+┃★│ • rcolor
+┃★│ • roll
+┃★│ • fact
+┃★╰──────────────
+┃★╭──────────────
+┃★│ 🔍 *Search*
+┃★│ • define [word]
+┃★│ • news [query]
+┃★│ • movie [name]
+┃★│ • weather [loc]
+┃★╰──────────────
+╰━━━━━━━━━━━━━━━┈⊷
+> ${config.DESCRIPTION}`
+            },
+            '9': {
+                title: "💞 *Reactions Menu* 💞",
+                content: `╭━━━〔 *Reactions Menu* 〕━━━┈⊷
+┃★╭──────────────
+┃★│ ❤️ *Affection*
+┃★│ • cuddle @user
+┃★│ • hug @user
+┃★│ • kiss @user
+┃★│ • lick @user
+┃★│ • pat @user
+┃★╰──────────────
+┃★╭──────────────
+┃★│ 😂 *Funny*
+┃★│ • bully @user
+┃★│ • bonk @user
+┃★│ • yeet @user
+┃★│ • slap @user
+┃★│ • kill @user
+┃★╰──────────────
+┃★╭──────────────
+┃★│ 😊 *Expressions*
+┃★│ • blush @user
+┃★│ • smile @user
+┃★│ • happy @user
+┃★│ • wink @user
+┃★│ • poke @user
+┃★╰──────────────
+╰━━━━━━━━━━━━━━━┈⊷
+> ${config.DESCRIPTION}`
+            },
+            '10': {
+                title: "🏠 *Main Menu* 🏠",
+                content: `╭━━━〔 *Main Menu* 〕━━━┈⊷
+┃★╭──────────────
+┃★│ ℹ️ *Bot Info*
+┃★│ • ping
+┃★│ • live
+┃★│ • alive
+┃★│ • runtime
+┃★│ • uptime
+┃★│ • repo
+┃★│ • owner
+┃★╰──────────────
+┃★╭──────────────
+┃★│ 🛠️ *Controls*
+┃★│ • menu
+┃★│ • menu2
+┃★│ • restart
+┃★╰──────────────
+╰━━━━━━━━━━━━━━━┈⊷
+> ${config.DESCRIPTION}`
+            }
+        };
+
+        // Message handler
+        const handler = async (msgData) => {
+            const receivedMsg = msgData.messages[0];
+            if (!receivedMsg?.message || !receivedMsg.key?.remoteJid) return;
+
+            const isReplyToMenu = receivedMsg.message.extendedTextMessage?.contextInfo?.stanzaId === messageID;
+            
+            if (isReplyToMenu) {
+                const receivedText = receivedMsg.message.conversation || 
+                                  receivedMsg.message.extendedTextMessage?.text;
+                const senderID = receivedMsg.key.remoteJid;
+
+                await conn.sendMessage(senderID, {
+                    react: { text: '⏳', key: receivedMsg.key }
+                });
+
+                if (menuData[receivedText]) {
+                    const selectedMenu = menuData[receivedText];
+                    
+                    await conn.sendMessage(
+                        senderID,
+                        {
+                            image: { url: config.MENU_IMAGE_URL || 'https://files.catbox.moe/xka13x.jpg' },
+                            caption: selectedMenu.content,
+                            contextInfo: contextInfo
+                        },
+                        { quoted: receivedMsg }
+                    );
+
+                    await conn.sendMessage(senderID, {
+                        react: { text: '✅', key: receivedMsg.key }
+                    });
+
+                } else {
+                    await conn.sendMessage(
+                        senderID,
+                        {
+                            text: `❌ *Invalid Option!* ❌\n\nPlease reply with a number between 1-10 to select a menu.\n\n*Example:* Reply with "1" for Download Menu\n\n> ${config.DESCRIPTION}`,
+                            contextInfo: contextInfo
+                        },
+                        { quoted: receivedMsg }
+                    );
+                    await conn.sendMessage(senderID, {
+                        react: { text: '❌', key: receivedMsg.key }
+                    });
+                }
+            }
+        };
+
+        // Add listener
+        conn.ev.on("messages.upsert", handler);
+
+        // Remove listener after 5 minutes
+        setTimeout(() => {
+            conn.ev.off("messages.upsert", handler);
+        }, 300000);
+
     } catch (e) {
-        reply(`Error: ${e.message}`);
+        console.error('Menu Error:', e);
+        await conn.sendMessage(from, {
+            react: { text: '❌', key: mek.key }
+        });
+        reply(`❌ An error occurred: ${e}\n\n> ${config.DESCRIPTION}`);
     }
 });

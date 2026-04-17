@@ -1,135 +1,162 @@
+/* ============================================
+   HUNTER XMD PRO - TIKTOK DOWNLOADER (BY LINK)
+   COMMAND  : .tiktok <tiktok_url>
+   ALIAS    : .ttdl .tt .tiktokdl
+   API      : https://www.tikwm.com/api/ (POST)
+   ============================================ */
+
 const { cmd } = require('../command');
 const axios = require('axios');
 
-const IMG = 'https://files.catbox.moe/xka13x.jpg';
+const BOT_NAME = 'ʜᴜɴᴛᴇʀ xᴍᴅ ᴘʀᴏ';
 
-// Try multiple TikTok APIs
-async function tiktokDownload(url) {
-    const apis = [
-        // API 1 - SSSTik style
-        async () => {
-            const res = await axios.get(`https://api.tikmate.app/api/lookup?url=${encodeURIComponent(url)}`, { timeout: 15000 });
-            if (res.data?.id) {
-                const token = res.data.token;
-                const id = res.data.id;
-                return {
-                    title: res.data.description || 'TikTok Video',
-                    author: res.data.author_name || 'Unknown',
-                    video: `https://tikmate.app/download/${token}/${id}.mp4`,
-                    audio: null
-                };
-            }
-        },
-        // API 2 - Musicaldown
-        async () => {
-            const res = await axios.post('https://api2.muscdn.me/request', 
-                new URLSearchParams({ url }), 
-                { timeout: 15000, headers: { 'Content-Type': 'application/x-www-form-urlencoded' }}
-            );
-            if (res.data?.video) return { title: res.data.desc || 'TikTok', author: res.data.author || 'Unknown', video: res.data.video, audio: res.data.music };
-        },
-        // API 3 - snaptik style
-        async () => {
-            const res = await axios.get(`https://api.tiklydown.eu.org/api/download?url=${encodeURIComponent(url)}`, { timeout: 15000 });
-            if (res.data?.video?.noWatermark) {
-                return { 
-                    title: res.data.title || 'TikTok Video', 
-                    author: res.data.author?.nickname || 'Unknown',
-                    video: res.data.video.noWatermark,
-                    audio: res.data.music?.play_url
-                };
-            }
-        },
-        // API 4 - Fallback
-        async () => {
-            const res = await axios.get(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}&count=12&cursor=0&web=1&hd=1`, { timeout: 15000 });
-            if (res.data?.data?.play) {
-                return {
-                    title: res.data.data.title || 'TikTok',
-                    author: res.data.data.author?.nickname || 'Unknown',
-                    video: res.data.data.play,
-                    audio: res.data.data.music
-                };
-            }
-        }
-    ];
-
-    for (const api of apis) {
-        try {
-            const result = await api();
-            if (result?.video) return result;
-        } catch (e) {}
+// ─── Base64 / URL resolver ─────────────────────────────────────
+function resolveMediaSource(link) {
+    if (!link) return null;
+    if (link.startsWith('http://') || link.startsWith('https://')) {
+        return { url: link };
     }
-    throw new Error('All TikTok APIs failed');
+    const base64Data = link.includes(',') ? link.split(',')[1] : link;
+    try {
+        return Buffer.from(base64Data, 'base64');
+    } catch (e) {
+        console.error('[resolveMedia] Failed to decode base64:', e.message);
+        return null;
+    }
 }
 
+// ─── tikwm downloader ──────────────────────────────────────────
+async function tikwmDownload(url) {
+    const res = await axios.post('https://www.tikwm.com/api/',
+        new URLSearchParams({ url, hd: '1' }),
+        {
+            timeout: 30000,
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'User-Agent': 'Mozilla/5.0 (iPad; U; CPU OS 3_2 like Mac OS X; en-us) AppleWebKit/531.21.10'
+            }
+        }
+    );
+    const d = res.data;
+    console.log('[TIKTOK-DL] tikwm code:', d?.code, '| msg:', d?.msg);
+    if (!d || d.code !== 0) throw new Error(d?.msg || 'tikwm error code: ' + d?.code);
+    return d.data;
+}
+
+// ─── COMMAND ──────────────────────────────────────────────────
 cmd({
     pattern: "tiktok",
     alias: ["ttdl", "tt", "tiktokdl"],
     desc: "Download TikTok video without watermark",
-    category: "download",
+    category: "downloader",
     react: "🎵",
     filename: __filename
 },
-async (conn, mek, m, { from, q, reply }) => {
+async (conn, mek, m, { from, args, q, reply }) => {
     try {
-        if (!q) return reply(`❌ *Usage:* .tiktok [url]\n\n*Example:* .tiktok https://vm.tiktok.com/...`);
-        if (!q.includes('tiktok.com') && !q.includes('vm.tiktok')) return reply('❌ Please provide a valid TikTok URL!');
-        
+        // ── 1. Validate ────────────────────────────────────────
+        if (!q) return reply(`🎵 *TikTok Downloader — ${BOT_NAME}*
+━━━━━━━━━━━━━━━━━━━━
+*Usage:*  .tiktok _[link]_
+
+*Example:*
+  › .tiktok https://www.tiktok.com/@user/video/123
+
+━━━━━━━━━━━━━━━━━━━━
+> ${BOT_NAME}`);
+
+        // Extract TikTok URL — also handles Facebook share links that embed TikTok URLs
+        let tiktokUrl = q.trim();
+        const ttMatch = tiktokUrl.match(/https?:\/\/(?:www\.|vm\.|vt\.)?tiktok\.com\/[^\s&]*/);
+        if (!ttMatch) {
+            return reply(`❌ *Invalid Link*
+━━━━━━━━━━━━━━━━━━━━
+Please send a valid TikTok link.
+━━━━━━━━━━━━━━━━━━━━
+> ${BOT_NAME}`);
+        }
+        tiktokUrl = ttMatch[0];
+
+        // ── 2. React + notify ──────────────────────────────────
         await conn.sendMessage(from, { react: { text: '⏳', key: mek.key } });
-        
-        const data = await tiktokDownload(q);
-        
-        const caption = `🎵 *TikTok Downloader*\n\n📖 *Title:* ${data.title}\n👤 *Author:* ${data.author}\n\n> ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴏʙᴇᴅ ᴛᴇᴄʜ`;
+        await reply(`⏳ *Downloading TikTok video...*
+━━━━━━━━━━━━━━━━━━━━
+🔗  _${tiktokUrl.substring(0, 60)}..._
+━━━━━━━━━━━━━━━━━━━━
+> ${BOT_NAME}`);
 
-        await conn.sendMessage(from, {
-            video: { url: data.video },
-            caption,
-            contextInfo: {
-                externalAdReply: {
-                    title: '🎵 TikTok Video',
-                    body: `By ${data.author}`,
-                    thumbnailUrl: IMG,
-                    sourceUrl: q,
-                    mediaType: 1
-                }
-            }
-        }, { quoted: mek });
+        // ── 3. Fetch from tikwm ────────────────────────────────
+        let data;
+        try {
+            data = await tikwmDownload(tiktokUrl);
+        } catch (apiErr) {
+            console.error('[TIKTOK-DL] API error:', apiErr.message);
+            await conn.sendMessage(from, { react: { text: '❌', key: mek.key } });
+            return reply(`❌ *Download Failed*
+━━━━━━━━━━━━━━━━━━━━
+_${apiErr.message.substring(0, 100)}_
+━━━━━━━━━━━━━━━━━━━━
+> ${BOT_NAME}`);
+        }
 
+        // ── 4. Extract fields ──────────────────────────────────
+        const title    = data.title || data.desc || 'TikTok Video';
+        const author   = data.author?.nickname || data.author?.unique_id || 'Unknown';
+        const username = data.author?.unique_id || '';
+        const likes    = data.digg_count    || data.statistics?.digg_count    || 0;
+        const comments = data.comment_count || data.statistics?.comment_count || 0;
+        const shares   = data.share_count   || data.statistics?.share_count   || 0;
+        const cover    = data.cover || data.origin_cover || null;
+
+        // Video URL: prefer HD no-watermark
+        const rawVideoUrl = data.hdplay || data.play || data.wmplay || null;
+
+        if (!rawVideoUrl) {
+            await conn.sendMessage(from, { react: { text: '❌', key: mek.key } });
+            return reply(`❌ *No Video URL Found*
+━━━━━━━━━━━━━━━━━━━━
+tikwm returned data but no download link.
+Try again in a moment.
+━━━━━━━━━━━━━━━━━━━━
+> ${BOT_NAME}`);
+        }
+
+        const videoSource = resolveMediaSource(rawVideoUrl);
+        if (!videoSource) {
+            await conn.sendMessage(from, { react: { text: '❌', key: mek.key } });
+            return reply(`❌ *Media Decode Failed*\n> ${BOT_NAME}`);
+        }
+
+        // ── 5. Send thumbnail first ────────────────────────────
+        if (cover) {
+            try {
+                await conn.sendMessage(from, {
+                    image: { url: cover },
+                    caption: `🎵 *${title}*\n👤  ${author}${username ? ` (@${username})` : ''}\n⏳ _Sending video..._`
+                }, { quoted: mek });
+            } catch (_) { /* thumbnail is optional */ }
+        }
+
+        // ── 6. Build caption ───────────────────────────────────
+        const caption = `🎵 *TikTok Video*
+━━━━━━━━━━━━━━━━━━━━
+📖  ${title.substring(0, 100)}
+👤  ${author}${username ? ` (@${username})` : ''}
+━━━━━━━━━━━━━━━━━━━━
+👍  ${Number(likes).toLocaleString()}   💬  ${Number(comments).toLocaleString()}   🔁  ${Number(shares).toLocaleString()}
+━━━━━━━━━━━━━━━━━━━━
+> ${BOT_NAME}`;
+
+        // ── 7. Send video ──────────────────────────────────────
+        const payload = { mimetype: 'video/mp4', caption };
+        payload.video = videoSource;
+
+        await conn.sendMessage(from, payload, { quoted: mek });
         await conn.sendMessage(from, { react: { text: '✅', key: mek.key } });
 
     } catch (e) {
-        console.error('[TikTok DL]', e.message);
-        reply(`❌ *Failed to download!*\n\n_${e.message}_\n\n💡 Try: .tt2 [url] as alternative`);
-        await conn.sendMessage(from, { react: { text: '❌', key: mek.key } });
-    }
-});
-
-cmd({
-    pattern: "tt2",
-    alias: ["tiktok2"],
-    desc: "TikTok audio download",
-    category: "download",
-    react: "🎵",
-    filename: __filename
-},
-async (conn, mek, m, { from, q, reply }) => {
-    try {
-        if (!q) return reply('❌ .tt2 [tiktok url]');
-        
-        await conn.sendMessage(from, { react: { text: '⏳', key: mek.key } });
-        const data = await tiktokDownload(q);
-        
-        if (!data.audio) return reply('❌ No audio found in this TikTok!');
-
-        await conn.sendMessage(from, {
-            audio: { url: data.audio },
-            mimetype: 'audio/mpeg',
-            fileName: `${data.title}.mp3`
-        }, { quoted: mek });
-
-        await conn.sendMessage(from, { react: { text: '✅', key: mek.key } });
-    } catch (e) {
-        reply(`❌ Failed: ${e.message}`);
+        console.error('[TIKTOK-DL] Fatal:', e.message);
+        await conn.sendMessage(from, { react: { text: '❌', key: mek.key } }).catch(() => {});
+        reply(`❌ *Error*\n━━━━━━━━━━━━━━━━━━━━\n${e.message.substring(0, 100)}\n━━━━━━━━━━━━━━━━━━━━\n> ${BOT_NAME}`);
     }
 });

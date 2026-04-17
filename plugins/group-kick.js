@@ -3,32 +3,42 @@ const { cmd } = require('../command');
 cmd({
     pattern: "remove",
     alias: ["kick", "k"],
-    desc: "Remove a member from the group",
-    category: "group",
+    desc: "Removes a member from the group",
+    category: "admin",
     react: "❌",
     filename: __filename
 },
-async (conn, mek, m, { from, q, isGroup, isBotAdmins, isAdmins, isOwner, isCreator, reply }) => {
-    if (!isGroup) return reply("❌ Group only command!");
-    if (!isAdmins && !isOwner && !isCreator) return reply("❌ Admins only!");
-    if (!isBotAdmins) return reply("❌ Make me admin first!");
+async (conn, mek, m, {
+    from, q, isGroup, isBotAdmins, reply, quoted, senderNumber
+}) => {
+    // Check if the command is used in a group
+    if (!isGroup) return reply("❌ This command can only be used in groups.");
 
-    let jid;
-    if (m.quoted) {
-        jid = m.quoted.sender;
-    } else if (m.mentionedJid && m.mentionedJid[0]) {
-        jid = m.mentionedJid[0];
-    } else if (q) {
-        const num = q.replace(/[^0-9]/g, '');
-        if (num) jid = num + '@s.whatsapp.net';
+    // Get the bot owner's number dynamically from conn.user.id
+    const botOwner = conn.user.id.split(":")[0];
+    if (senderNumber !== botOwner) {
+        return reply("❌ Only the bot owner can use this command.");
     }
 
-    if (!jid) return reply("❌ Reply to a message or mention a user!\nUsage: .kick @user");
+    // Check if the bot is an admin
+    if (!isBotAdmins) return reply("❌ I need to be an admin to use this command.");
+
+    let number;
+    if (m.quoted) {
+        number = m.quoted.sender.split("@")[0]; // If replying to a message, get the sender's number
+    } else if (q && q.includes("@")) {
+        number = q.replace(/[@\s]/g, ''); // If mentioning a user
+    } else {
+        return reply("❌ Please reply to a message or mention a user to remove.");
+    }
+
+    const jid = number + "@s.whatsapp.net";
 
     try {
         await conn.groupParticipantsUpdate(from, [jid], "remove");
-        reply(`✅ *Removed!*\n👤 @${jid.split('@')[0]}`, { mentions: [jid] });
-    } catch (e) {
-        reply(`❌ Failed: ${e.message}`);
+        reply(`✅ Successfully removed @${number}`, { mentions: [jid] });
+    } catch (error) {
+        console.error("Remove command error:", error);
+        reply("❌ Failed to remove the member.");
     }
 });
