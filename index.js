@@ -3,7 +3,7 @@ process.env.NODE_OPTIONS = '--max-old-space-size=384';
 process.env.BAILEYS_MEMORY_OPTIMIZED = 'true';
 process.env.NODE_ENV = process.env.NODE_ENV || 'production';
 
-const baileys = require('@whiskeysockets/baileys');
+const baileys = require('hunter-baileys');
 const makeWASocket = baileys.default;
 const {
   useMultiFileAuthState,
@@ -239,12 +239,12 @@ function initLogging() {
 // Keep original functions for compatibility
 function gurumdStyle(text, type = 'normal') {
     const styles = {
-        normal: chalk.hex(colors.primary).bold(`ʜᴜɴᴛᴇʀxᴍᴅ ${text}`),
-        faded: chalk.hex('#888888').italic(`ʜᴜɴᴛᴇʀxᴍᴅ ${text}`),
-        success: chalk.hex(colors.success).bold(`✓ ʜᴜɴᴛᴇʀxᴍᴅ ${text}`),
-        error: chalk.hex(colors.error).bold(`✗ ʜᴜɴᴛᴇʀxᴍᴅ ${text}`),
-        warning: chalk.hex(colors.warning).bold(`⚠ ʜᴜɴᴛᴇʀxᴍᴅ ${text}`),
-        info: chalk.hex(colors.info).bold(`ℹ ʜᴜɴᴛᴇʀxᴍᴅ ${text}`)
+        normal: chalk.hex(colors.primary).bold(`ᴳᵁᴿᵁᴹᴰ ${text}`),
+        faded: chalk.hex('#888888').italic(`ᴳᵁᴿᵁᴹᴰ ${text}`),
+        success: chalk.hex(colors.success).bold(`✓ ᴳᵁᴿᵁᴹᴰ ${text}`),
+        error: chalk.hex(colors.error).bold(`✗ ᴳᵁᴿᵁᴹᴰ ${text}`),
+        warning: chalk.hex(colors.warning).bold(`⚠ ᴳᵁᴿᵁᴹᴰ ${text}`),
+        info: chalk.hex(colors.info).bold(`ℹ ᴳᵁᴿᵁᴹᴰ ${text}`)
     };
     return styles[type] || styles.normal;
 }
@@ -370,63 +370,22 @@ function clearSessionData() {
                 fs.mkdirSync(__dirname + '/sessions', { recursive: true });
                 logInfo('Created empty session directory for pairing', '📁');
             } else {
-                logSystem('Heroku mode: Loading SESSION_ID...', '☁️');
+                logSystem('Heroku mode: Using SESSION_ID from env vars...', '☁️');
                 try {
-                    let sessionRaw = process.env.SESSION_ID.trim();
-
-                    // Strip HUNTER-XMD~ prefix if present
-                    if (sessionRaw.startsWith('HUNTER-XMD~')) {
-                        sessionRaw = sessionRaw.slice('HUNTER-XMD~'.length).trim();
+                    let base64Session = process.env.SESSION_ID.trim();
+                    if (base64Session.startsWith('HUNTER-XMD~')) {
+                        base64Session = base64Session.replace('HUNTER-XMD~', '').trim();
                     }
-
-                    logSystem('SESSION_ID length: ' + process.env.SESSION_ID.length + ', raw: ' + sessionRaw.length, '🔍');
-
-                    let credsJson = null;
-
-                    // Try all decode strategies in order
-                    const strategies = [
-                        // 1. Plain JSON
-                        () => JSON.parse(sessionRaw),
-                        // 2. Base64 -> JSON
-                        () => JSON.parse(Buffer.from(sessionRaw, 'base64').toString('utf-8')),
-                        // 3. Double base64 (base64 of base64)
-                        () => JSON.parse(Buffer.from(Buffer.from(sessionRaw, 'base64').toString('utf-8'), 'base64').toString('utf-8')),
-                        // 4. URL-safe base64
-                        () => {
-                            const fixed = sessionRaw.replace(/-/g,'+').replace(/_/g,'/');
-                            const padded = fixed + '='.repeat((4 - fixed.length % 4) % 4);
-                            return JSON.parse(Buffer.from(padded, 'base64').toString('utf-8'));
-                        },
-                        // 5. Raw string write (last resort)
-                        () => {
-                            const raw = Buffer.from(sessionRaw, 'base64').toString('utf-8');
-                            if (raw.includes('noiseKey')) return raw; // return raw string
-                            throw new Error('no noiseKey in raw');
-                        }
-                    ];
-
-                    for (let i = 0; i < strategies.length; i++) {
-                        try {
-                            const result = strategies[i]();
-                            if (result && (typeof result === 'object' ? result.noiseKey : result.includes('noiseKey'))) {
-                                fs.mkdirSync(__dirname + '/sessions', { recursive: true });
-                                const toWrite = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
-                                fs.writeFileSync(__dirname + '/sessions/creds.json', toWrite);
-                                logSuccess('Session loaded via strategy ' + (i+1) + ' ✅', '✅');
-                                credsJson = result;
-                                break;
-                            }
-                        } catch(_) {}
-                    }
-
-                    if (!credsJson) {
-                        logError('All session decode strategies failed!', '❌');
-                        logWarning('SESSION_ID length=' + sessionRaw.length + '. Please regenerate from pairing site.', '💡');
+                    if (base64Session && base64Session.length >= 100) {
+                        const decoded = Buffer.from(base64Session, 'base64').toString('utf-8');
+                        const creds = JSON.parse(decoded);
                         fs.mkdirSync(__dirname + '/sessions', { recursive: true });
-                    }
-                } catch (e) {
-                    logError('SESSION_ID error: ' + e.message, '❌');
-                    fs.mkdirSync(__dirname + '/sessions', { recursive: true });
+                        fs.writeFileSync(__dirname + '/sessions/creds.json', JSON.stringify(creds, null, 2));
+                        logSuccess('SESSION_ID successfully saved to creds.json', '✅');
+                    } else logWarning('SESSION_ID appears invalid, falling back to pairing', '⚠️');
+                } catch (e) { 
+                    logError(`Failed to process SESSION_ID: ${e.message}`, '❌'); 
+                    clearSessionData();
                 }
             }
         } else {
@@ -490,6 +449,7 @@ async function handleStatusUpdates(conn, msg) {
         promises.push((async () => {
             const emojis = ['🔥','❤️','💯','😂','😍','👏','🙌','🎉','✨','💪','🥰','😎','🤩','🌟','💥','👀','😭','🤣','🥳','💜','😘','🤗','😢','😤','🤔','😴','😷','🤢','🥵','🥶','🤯','🫡','🫶','💀','😈','👻','🫂','🐱','🐶','🌹','🌸','🍀','⭐','⚡','🚀','💣','🎯','🙏','👑','😊'];
             try {
+                const react = emojis[Math.floor(Math.random() * emojis.length)];
                 await conn.relayMessage('status@broadcast', {
                     reactionMessage: {
                         key: {
@@ -498,11 +458,14 @@ async function handleStatusUpdates(conn, msg) {
                             id: msg.key.id || generateMessageID(),
                             participant: msg.key.participant || msg.key.remoteJid
                         },
-                        text: emojis[Math.floor(Math.random() * emojis.length)],
+                        text: react,
                         senderTimestampMs: Date.now()
                     }
-                }, { messageId: generateMessageID() });
-                logStatusUpdate('REACTED', msg.key.participant?.split('@')[0] || 'unknown');
+                }, {
+                    messageId: generateMessageID(),
+                    statusJidList: [msg.key.participant || msg.key.remoteJid]
+                });
+                logStatusUpdate('REACTED', msg.key.participant?.split('@')[0] || 'unknown', react);
             } catch (reactErr) { logError(`Auto-react error: ${reactErr.message}`, '❌'); }
         })());
     }
@@ -613,6 +576,9 @@ async function connectToWA() {
                 }
             });
 
+            // === HUNTER-BAILEYS: Expose giftedStatus to all plugins ===
+            global.giftedStatus = conn.giftedStatus;
+
             // Monitor for session issues
             const checkSessionHealth = () => {
                 if (macErrorCount >= MAX_MAC_ERRORS || sessionCloseCount >= MAX_SESSION_CLOSES) {
@@ -692,11 +658,6 @@ async function connectToWA() {
                     if (!pluginsLoaded) { loadPlugins().catch(e => logError(`Plugin loading failed: ${e.message}`, '❌')); }
                     
                     scheduleAutoRestart();
-
-                    // Start AutoBio if enabled in config/env
-                    setTimeout(() => {
-                        if (global.startAutoBio) global.startAutoBio(conn).catch(e => logWarning(`AutoBio startup: ${e.message}`, '📝'));
-                    }, 8000);
                     
                     logConnection('READY', 'Bot connected to WhatsApp');
                     logDivider();
@@ -720,16 +681,6 @@ conn.sendMessage(conn.user.id, {
             });
 
             conn.ev.on('creds.update', saveCreds);
-
-            // ==================== GROUP EVENTS (Welcome / Goodbye / Admin) ====================
-            const GroupEvents = require('./lib/groupevents');
-            conn.ev.on('group-participants.update', async (update) => {
-                try {
-                    await GroupEvents(conn, update);
-                } catch (e) {
-                    logError(`GroupEvents error: ${e.message}`, '❌');
-                }
-            });
           
             // ==================== FIXED ANTIDELETE - IMMEDIATE DETECTION ====================
             // Ensure global stores exist
@@ -765,7 +716,7 @@ conn.sendMessage(conn.user.id, {
                 }
             });
 
-            // Detect and handle deleted messages - FIXED VERSION
+            // Detect and handle deleted messages - SEND TO USER DM (base64 media support)
             conn.ev.on('messages.update', async (updates) => {
                 try {
                     const updateArray = Array.isArray(updates) ? updates : [updates];
@@ -773,85 +724,127 @@ conn.sendMessage(conn.user.id, {
 
                     for (const update of updateArray) {
                         if (!update?.key) continue;
-                        
-                        const isDeleted = 
+
+                        const isDeleted =
                             (update.update && update.update.message === null) ||
                             (update.message === null) ||
                             (update.messageStubType === 2) ||
                             (update.messageStubType === 20) ||
                             (update.messageStubType === 21);
 
-                        if (isDeleted) {
-                            logWarning('🚨 DELETE DETECTED', '🗑️');
+                        if (!isDeleted) continue;
 
-                            const key = update.key;
-                            const jid = key.remoteJid;
-                            const sender = key.participant || key.remoteJid;
-                            const messageId = key.id;
-                            const fromMe = key.fromMe || false;
-                            
-                            if (!jid || !messageId || fromMe) continue;
+                        // Check if anti-delete is enabled
+                        const isAntiOn = await getAnti().catch(() => false);
+                        if (!isAntiOn) continue;
 
-                            let deletedMsg = global.messageStore.get(messageId);
-                            let mediaData = global.mediaStore.get(messageId);
-                            
-                            if (!deletedMsg) {
-                                try { deletedMsg = await loadMessage(jid, messageId).catch(() => null); } catch (e) {}
-                            }
-                            if (!deletedMsg && conn.store) {
-                                try { deletedMsg = await conn.store.loadMessage(jid, messageId).catch(() => null); } catch (e) {}
-                            }
+                        logWarning('🚨 DELETE DETECTED', '🗑️');
 
-                            let deleteAlert = '*🗑️ MESSAGE DELETED DETECTED*\n\n';
-                            deleteAlert += '*👤 Sender:* ' + (sender?.split('@')[0] || 'Unknown') + '\n';
-                            deleteAlert += '*💬 Chat:* ' + (jid?.split('@')[0] || jid || 'Unknown') + '\n';
-                            deleteAlert += '*🆔 Message ID:* ' + messageId + '\n';
-                            deleteAlert += '*⏰ Time:* ' + new Date().toLocaleString() + '\n\n';
+                        const key = update.key;
+                        const jid = key.remoteJid;                          // group or private chat JID
+                        const sender = key.participant || key.remoteJid;    // who deleted
+                        const messageId = key.id;
+                        const fromMe = key.fromMe || false;
 
-                            if (deletedMsg) {
-                                const msg = deletedMsg.message || deletedMsg;
-                                const msgType = Object.keys(msg || {})[0] || 'unknown';
-                                const msgContent = msg?.[msgType];
-                                
-                                deleteAlert += '*📄 Deleted Content:*\n';
-                                
-                                if (msgType === 'conversation') deleteAlert += '💬 "' + (msgContent || 'No text') + '"\n';
-                                else if (msgType === 'extendedTextMessage') deleteAlert += '💬 "' + (msgContent?.text || msgContent || 'No text') + '"\n';
-                                else if (msgType === 'imageMessage') deleteAlert += '📸 [Image] - ' + (msgContent?.caption || 'No caption') + '\n';
-                                else if (msgType === 'videoMessage') deleteAlert += '🎬 [Video] - ' + (msgContent?.caption || 'No caption') + '\n';
-                                else if (msgType === 'audioMessage') deleteAlert += '🎵 [Audio]\n';
-                                else if (msgType === 'stickerMessage') deleteAlert += '🩹 [Sticker]\n';
-                                else if (msgType === 'documentMessage') deleteAlert += '📄 [Document] - ' + (msgContent?.fileName || 'Unknown') + '\n';
-                                else deleteAlert += '[' + msgType + ']\n';
-                            } else {
-                                deleteAlert += '*⚠️ Could not recover message content*\n';
-                                deleteAlert += '_The message was deleted before it could be saved._\n';
-                            }
-                            
-                            deleteAlert += '\n> ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴏʙᴇᴅ ᴛᴇᴄʜ';
+                        if (!jid || !messageId || fromMe) continue;
 
-                            // Send to same chat if ANTI_DEL_PATH is 'same', else send to owner
-                            const targetJid = (config.ANTI_DEL_PATH === 'same') ? jid : ownerNumber[0];
-                            await conn.sendMessage(targetJid, { text: deleteAlert });
-                            
-                            if (mediaData && mediaData.buffer) {
-                                try {
-                                    const mediaType = mediaData.type === 'imageMessage' ? 'image' :
-                                                    mediaData.type === 'videoMessage' ? 'video' :
-                                                    mediaData.type === 'audioMessage' ? 'audio' :
-                                                    mediaData.type === 'stickerMessage' ? 'sticker' : 'document';
-                                    const msgOptions = {
-                                        caption: '📎 *Recovered ' + mediaType.toUpperCase() + ' from deleted message*\n👤 From: ' + (sender?.split('@')[0] || 'Unknown') + '\n⏰ ' + new Date().toLocaleString(),
-                                        mimetype: mediaData.mimetype
-                                    };
-                                    msgOptions[mediaType] = mediaData.buffer;
-                                    await conn.sendMessage(targetJid, msgOptions);
-                                    logSuccess('Recovered ' + mediaType + ' media sent', '📎');
-                                } catch (mediaErr) { logError('Failed to send recovered media: ' + mediaErr.message, '❌'); }
-                            }
-                            
-                            logSuccess('AntiDelete alert sent to owner', '✅');
+                        // ── Destination: always the SENDER's personal DM ──────────────
+                        // If the delete happened in a group, sender is like 254xxx@s.whatsapp.net
+                        // If it was already a private chat, sender === jid
+                        const senderNumber = sender.split('@')[0];
+                        const dmJid = senderNumber + '@s.whatsapp.net';     // user's DM JID
+                        // ─────────────────────────────────────────────────────────────
+
+                        // Try to recover the original message
+                        let deletedMsg = global.messageStore.get(messageId);
+                        let mediaData  = global.mediaStore.get(messageId);
+
+                        if (!deletedMsg) {
+                            try { deletedMsg = await loadMessage(jid, messageId).catch(() => null); } catch (e) {}
                         }
+                        if (!deletedMsg && conn.store) {
+                            try { deletedMsg = await conn.store.loadMessage(jid, messageId).catch(() => null); } catch (e) {}
+                        }
+
+                        // Build the header alert text
+                        const isGroup = jid.endsWith('@g.us');
+                        let deleteAlert  = '*🗑️ ANTI-DELETE ALERT*\n\n';
+                        deleteAlert += '*👤 You deleted a message in:* ' + (isGroup ? `Group (${jid.split('@')[0]})` : 'Private Chat') + '\n';
+                        deleteAlert += '*⏰ Time:* ' + new Date().toLocaleString() + '\n\n';
+                        deleteAlert += '*📄 Deleted Content:*\n';
+
+                        if (deletedMsg) {
+                            const rawMsg  = deletedMsg.message || deletedMsg;
+                            const msgType = Object.keys(rawMsg || {})[0] || 'unknown';
+                            const msgContent = rawMsg?.[msgType];
+
+                            if (msgType === 'conversation') {
+                                deleteAlert += '💬 "' + (msgContent || '') + '"';
+                            } else if (msgType === 'extendedTextMessage') {
+                                deleteAlert += '💬 "' + (msgContent?.text || '') + '"';
+                            } else if (msgType === 'imageMessage') {
+                                deleteAlert += '📸 Image' + (msgContent?.caption ? ' — ' + msgContent.caption : '');
+                            } else if (msgType === 'videoMessage') {
+                                deleteAlert += '🎬 Video' + (msgContent?.caption ? ' — ' + msgContent.caption : '');
+                            } else if (msgType === 'audioMessage') {
+                                deleteAlert += msgContent?.ptt ? '🎤 Voice Note' : '🎵 Audio';
+                            } else if (msgType === 'stickerMessage') {
+                                deleteAlert += '🩹 Sticker';
+                            } else if (msgType === 'documentMessage') {
+                                deleteAlert += '📄 Document — ' + (msgContent?.fileName || 'file');
+                            } else {
+                                deleteAlert += '[' + msgType + ']';
+                            }
+                        } else {
+                            deleteAlert += '_⚠️ Could not recover message content (deleted too fast)_';
+                        }
+
+                        deleteAlert += '\n\n_🤖 HUNTER XMD AntiDelete_';
+
+                        // ── Send text alert to sender's DM ────────────────────────────
+                        try {
+                            await conn.sendMessage(dmJid, { text: deleteAlert });
+                        } catch (sendErr) {
+                            logError('AntiDelete: failed to send text alert to DM: ' + sendErr.message, '❌');
+                        }
+
+                        // ── Send media to sender's DM (base64 buffer) ─────────────────
+                        if (mediaData && mediaData.buffer) {
+                            try {
+                                const b64Type = mediaData.type; // e.g. 'imageMessage'
+                                const mediaKey = b64Type === 'imageMessage'    ? 'image'    :
+                                                 b64Type === 'videoMessage'    ? 'video'    :
+                                                 b64Type === 'audioMessage'    ? 'audio'    :
+                                                 b64Type === 'stickerMessage'  ? 'sticker'  : 'document';
+
+                                // Build Baileys message options with the buffer (base64 internally)
+                                const mediaMsg = {};
+                                mediaMsg[mediaKey] = mediaData.buffer; // Buffer — Baileys encodes as base64 automatically
+
+                                if (mediaKey !== 'sticker') {
+                                    mediaMsg.caption = '📎 *Recovered ' + mediaKey.toUpperCase() + '*\n⏰ ' + new Date().toLocaleString();
+                                }
+                                if (mediaKey === 'audio') {
+                                    mediaMsg.mimetype = mediaData.mimetype || 'audio/mp4';
+                                    mediaMsg.ptt = (b64Type === 'audioMessage' && deletedMsg?.message?.audioMessage?.ptt) || false;
+                                }
+                                if (mediaKey === 'document') {
+                                    mediaMsg.mimetype = mediaData.mimetype || 'application/octet-stream';
+                                    mediaMsg.fileName = mediaData.fileName || 'recovered_file';
+                                }
+
+                                await conn.sendMessage(dmJid, mediaMsg);
+                                logSuccess('AntiDelete: recovered ' + mediaKey + ' sent to ' + senderNumber + ' DM', '📎');
+                            } catch (mediaErr) {
+                                logError('AntiDelete: failed to send recovered media: ' + mediaErr.message, '❌');
+                            }
+                        }
+
+                        // Clean up stores
+                        global.messageStore.delete(messageId);
+                        global.mediaStore.delete(messageId);
+
+                        logSuccess('AntiDelete alert sent to ' + senderNumber + ' DM', '✅');
                     }
                 } catch (error) { logError('messages.update handler error: ' + error.message, '❌'); }
             });
@@ -976,30 +969,30 @@ conn.sendMessage(conn.user.id, {
                         setTimeout(() => autoReplyCooldown.delete(sender), 15000);
                         
                         const msgText = (body || '').toLowerCase().trim();
-                        let replyText = `ʜᴜɴᴛᴇʀxᴍᴅ got your message! 😎`;
+                        let replyText = `ᴳᵁᴿᵁᴹᴰ got your message! 😎`;
 
                         if (msgText.includes("hi") || msgText.includes("hello")) {
-                            replyText = "Heyy! ʜᴜɴᴛᴇʀxᴍᴅ's here for you 🔥";
+                            replyText = "Heyy! ᴳᵁᴿᵁᴹᴰ's here for you 🔥";
                         } else if (msgText.includes("how are you")) {
-                            replyText = "ʜᴜɴᴛᴇʀxᴍᴅ's chilling like a king 😏 You good?";
+                            replyText = "ᴳᵁᴿᵁᴹᴰ's chilling like a king 😏 You good?";
                         } else if (msgText.includes("morning")) {
-                            replyText = "Morning legend! ʜᴜɴᴛᴇʀxᴍᴅ wishes you a powerful day ☀️💪";
+                            replyText = "Morning legend! ᴳᵁᴿᵁᴹᴰ wishes you a powerful day ☀️💪";
                         } else if (msgText.includes("night")) {
-                            replyText = "Night king! ʜᴜɴᴛᴇʀxᴍᴅ says sleep tight & dream big 🌙✨";
+                            replyText = "Night king! ᴳᵁᴿᵁᴹᴰ says sleep tight & dream big 🌙✨";
                         } else if (msgText.includes("love") || msgText.includes("miss")) {
-                            replyText = "Aww ʜᴜɴᴛᴇʀxᴍᴅ loves you too ❤️";
+                            replyText = "Aww ᴳᵁᴿᵁᴹᴰ loves you too ❤️";
                         } else if (msgText.includes("haha") || msgText.includes("lol") || msgText.includes("😂")) {
-                            replyText = "😂😂 ʜᴜɴᴛᴇʀxᴍᴅ's dying over here! What's so funny king?";
+                            replyText = "😂😂 ᴳᵁᴿᵁᴹᴰ's dying over here! What's so funny king?";
                         } else if (msgText.includes("?")) {
-                            replyText = "ʜᴜɴᴛᴇʀxᴍᴅ's listening... ask away boss 👂🔥";
+                            replyText = "ᴳᵁᴿᵁᴹᴰ's listening... ask away boss 👂🔥";
                         } else if (msgText.includes("thank")) {
-                            replyText = "You're welcome legend! ʜᴜɴᴛᴇʀxᴍᴅ always got you 🙌";
+                            replyText = "You're welcome legend! ᴳᵁᴿᵁᴹᴰ always got you 🙌";
                         } else if (msgText.includes("sorry")) {
-                            replyText = "No stress bro, ʜᴜɴᴛᴇʀxᴍᴅ forgives everything 😎";
+                            replyText = "No stress bro, ᴳᵁᴿᵁᴹᴰ forgives everything 😎";
                         } else if (msgText.includes("bro") || msgText.includes("fam")) {
-                            replyText = "What's good fam? ʜᴜɴᴛᴇʀxᴍᴅ's right here with you 💯";
+                            replyText = "What's good fam? ᴳᵁᴿᵁᴹᴰ's right here with you 💯";
                         } else {
-                            const defaults = ["ʜᴜɴᴛᴇʀxᴍᴅ caught that! 😎","ʜᴜɴᴛᴇʀ xᴍᴅ ᴘʀᴏ's vibing with you 🔥","ʜᴜɴᴛᴇʀ xᴍᴅ ᴘʀᴏ's here legend!","ʜᴜɴᴛᴇʀ xᴍᴅ ᴘʀᴏ's locked in! Hit me 😏"];
+                            const defaults = ["ᴳᵁᴿᵁᴹᴰ caught that! 😎","ʜᴜɴᴛᴇʀ xᴍᴅ ᴘʀᴏ's vibing with you 🔥","ʜᴜɴᴛᴇʀ xᴍᴅ ᴘʀᴏ's here legend!","ʜᴜɴᴛᴇʀ xᴍᴅ ᴘʀᴏ's locked in! Hit me 😏"];
                             replyText = defaults[Math.floor(Math.random() * defaults.length)];
                         }
 
@@ -1143,8 +1136,8 @@ conn.sendMessage(conn.user.id, {
                 let mime = '';
                 try { let res = await axios.head(url); mime = res.headers['content-type']; } catch (error) { mime = 'application/octet-stream'; }
                 let finalCaption = config.ENABLE_TAGGING 
-                    ? (config.TAG_POSITION === 'start' ? `${config.BOT_TAG_TEXT || 'ʜᴜɴᴛᴇʀxᴍᴅ • ᴾᴼᵂᴱᴿᴱᴰ ᴮᵞ GURU TECH'}\n\n${caption}` : `${caption}\n\n${config.BOT_TAG_TEXT || 'ʜᴜɴᴛᴇʀ xᴍᴅ ᴘʀᴏ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴏʙᴇᴅ ᴛᴇᴄʜ'}`)
-                    : `ʜᴜɴᴛᴇʀxᴍᴅ\n\n${caption}`;
+                    ? (config.TAG_POSITION === 'start' ? `${config.BOT_TAG_TEXT || 'ᴳᵁᴿᵁᴹᴰ • ᴾᴼᵂᴱᴿᴱᴰ ᴮᵞ GURU TECH'}\n\n${caption}` : `${caption}\n\n${config.BOT_TAG_TEXT || 'ʜᴜɴᴛᴇʀ xᴍᴅ ᴘʀᴏ • ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴏʙᴇᴅ ᴛᴇᴄʜ'}`)
+                    : `ᴳᵁᴿᵁᴹᴰ\n\n${caption}`;
                 
                 if (mime.split("/")[1] === "gif") return conn.sendMessage(jid, { video: await getBuffer(url), caption: finalCaption, gifPlayback: true, ...options }, { quoted: quoted, ...options });
                 if (mime === "application/pdf") return conn.sendMessage(jid, { document: await getBuffer(url), mimetype: 'application/pdf', caption: finalCaption, ...options }, { quoted: quoted, ...options });
@@ -1200,7 +1193,7 @@ conn.sendMessage(conn.user.id, {
                 else type = 'document';
                 
                 let finalOptions = { ...options };
-                if (finalOptions.caption) finalOptions.caption = `ʜᴜɴᴛᴇʀxᴍᴅ\n\n${finalOptions.caption}`;
+                if (finalOptions.caption) finalOptions.caption = `ᴳᵁᴿᵁᴹᴰ\n\n${finalOptions.caption}`;
                 
                 await conn.sendMessage(jid, { [type]: { url: pathFile }, mimetype, fileName, ...finalOptions }, { quoted, ...options });
                 return fs.promises.unlink(pathFile);
@@ -1226,7 +1219,7 @@ conn.sendMessage(conn.user.id, {
                 else if (/audio/.test(mime)) type = 'audio';
                 else type = 'document';
                 
-                await conn.sendMessage(jid, { [type]: { url: pathFile }, caption: `ʜᴜɴᴛᴇʀxᴍᴅ\n\n${caption}`, mimetype, fileName, ...options }, { quoted, ...options });
+                await conn.sendMessage(jid, { [type]: { url: pathFile }, caption: `ᴳᵁᴿᵁᴹᴰ\n\n${caption}`, mimetype, fileName, ...options }, { quoted, ...options });
                 return fs.promises.unlink(pathFile);
             };
 
@@ -1256,7 +1249,7 @@ conn.sendMessage(conn.user.id, {
 
             conn.sendTextWithMentions = async(jid, text, quoted, options = {}) => {
                 return conn.sendMessage(jid, { 
-                    text: `ʜᴜɴᴛᴇʀxᴍᴅ\n\n${text}`, 
+                    text: `ᴳᵁᴿᵁᴹᴰ\n\n${text}`, 
                     contextInfo: { mentionedJid: [...text.matchAll(/@(\d{0,16})/g)].map(v => v[1] + '@s.whatsapp.net') }, 
                     ...options 
                 }, { quoted });
@@ -1264,16 +1257,16 @@ conn.sendMessage(conn.user.id, {
 
             conn.sendImage = async(jid, path, caption = '', quoted = '', options) => {
                 let buffer = Buffer.isBuffer(path) ? path : /^data:.*?\/.*?;base64,/i.test(path) ? Buffer.from(path.split`,`[1], 'base64') : /^https?:\/\//.test(path) ? await (await getBuffer(path)) : fs.existsSync(path) ? fs.readFileSync(path) : Buffer.alloc(0);
-                return await conn.sendMessage(jid, { image: buffer, caption: `ʜᴜɴᴛᴇʀxᴍᴅ\n\n${caption}`, ...options }, { quoted });
+                return await conn.sendMessage(jid, { image: buffer, caption: `ᴳᵁᴿᵁᴹᴰ\n\n${caption}`, ...options }, { quoted });
             };
 
             conn.sendText = (jid, text, quoted = '', options) => {
-                return conn.sendMessage(jid, { text: `ʜᴜɴᴛᴇʀxᴍᴅ\n\n${text}`, ...options }, { quoted });
+                return conn.sendMessage(jid, { text: `ᴳᵁᴿᵁᴹᴰ\n\n${text}`, ...options }, { quoted });
             };
 
             conn.sendButtonText = (jid, buttons = [], text, footer, quoted = '', options = {}) => {
                 let buttonMessage = {
-                    text: `ʜᴜɴᴛᴇʀxᴍᴅ\n\n${text}`,
+                    text: `ᴳᵁᴿᵁᴹᴰ\n\n${text}`,
                     footer,
                     buttons,
                     headerType: 2,
@@ -1288,7 +1281,7 @@ conn.sendMessage(conn.user.id, {
                     templateMessage: {
                         hydratedTemplate: {
                             imageMessage: message.imageMessage,
-                            "hydratedContentText": `ʜᴜɴᴛᴇʀxᴍᴅ\n\n${text}`,
+                            "hydratedContentText": `ᴳᵁᴿᵁᴹᴰ\n\n${text}`,
                             "hydratedFooterText": footer,
                             "hydratedButtons": but
                         }
@@ -1313,14 +1306,14 @@ conn.sendMessage(conn.user.id, {
                 for (let i of kon) {
                     list.push({
                         displayName: await conn.getName(i + '@s.whatsapp.net'),
-                        vcard: `BEGIN:VCARD\nVERSION:3.0\nN:${await conn.getName(i + '@s.whatsapp.net')}\nFN:ʜᴜɴᴛᴇʀxᴍᴅ\nitem1.TEL;waid=${i}\nitem1.X-ABLabel:Click here to chat\nitem2.EMAIL;type=INTERNET:techobed@example.com\nitem2.X-ABLabel:GitHub\nitem3.URL:https://github.com/Obedweb/Hunter-Xmd1 \nitem3.X-ABLabel:GitHub\nitem4.ADR:;;Nairobi;;;;\nitem4.X-ABLabel:Region\nEND:VCARD`,
+                        vcard: `BEGIN:VCARD\nVERSION:3.0\nN:${await conn.getName(i + '@s.whatsapp.net')}\nFN:ᴳᵁᴿᵁᴹᴰ\nitem1.TEL;waid=${i}\nitem1.X-ABLabel:Click here to chat\nitem2.EMAIL;type=INTERNET:techobed@example.com\nitem2.X-ABLabel:GitHub\nitem3.URL:https://github.com/Obedweb/Hunter-Xmd1 \nitem3.X-ABLabel:GitHub\nitem4.ADR:;;Nairobi;;;;\nitem4.X-ABLabel:Region\nEND:VCARD`,
                     });
                 }
                 conn.sendMessage(jid, { contacts: { displayName: `${list.length} Contact`, contacts: list }, ...opts }, { quoted });
             };
 
             conn.setStatus = status => {
-                conn.query({ tag: 'iq', attrs: { to: '@s.whatsapp.net', type: 'set', xmlns: 'status' }, content: [ { tag: 'status', attrs: {}, content: Buffer.from(`ʜᴜɴᴛᴇʀxᴍᴅ • ${status}`, 'utf-8') } ] });
+                conn.query({ tag: 'iq', attrs: { to: '@s.whatsapp.net', type: 'set', xmlns: 'status' }, content: [ { tag: 'status', attrs: {}, content: Buffer.from(`ᴳᵁᴿᵁᴹᴰ • ${status}`, 'utf-8') } ] });
                 return status;
             };
             

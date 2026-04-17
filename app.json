@@ -1,191 +1,214 @@
 {
-  "name": "𝐇𝐔𝐍𝐓𝐄𝐑 𝐗𝐌𝐃 PRO",
-  "description": "WhatsApp Bot by ᴏʙᴇᴅᴛᴇᴄʜ - Fast, Smart, Multi-Feature",
+  "name": "𝐇𝐔𝐍𝐓𝐄𝐑 𝐗𝐌𝐃 pro",
+  "description": "Javascript WhatsApp bot made by ᴏʙᴇᴅᴛᴇᴄʜ",
   "logo": "https://files.catbox.moe/xka13x.jpg",
-  "keywords": ["HUNTER-XMD", "whatsapp-bot", "obedtech"],
+  "keywords": ["HUNTER-XMD pro"],
   "success_url": "/",
-  "stack": "container",
+
+    "stack": "container",
   "env": {
     "SESSION_ID": {
-      "description": "🔑 Paste your base64 session ID here (required to connect bot)",
+      "description": "Put the session-id here.",
       "required": true,
       "value": ""
-    },
-    "OWNER_NUMBER": {
-      "description": "📱 Your WhatsApp number with country code (e.g. 254712345678)",
-      "required": true,
-      "value": "254701082940"
-    },
-    "OWNER_NAME": {
-      "description": "👑 Bot owner name shown in menus",
+    },  
+    
+    "STICKER_NAME": {
+      "description": "type your sticker pack name.",
       "required": false,
-      "value": "ObedTechX"
-    },
-    "BOT_NAME": {
-      "description": "🤖 Bot display name shown in all messages",
-      "required": false,
-      "value": "𝐇𝐔𝐍𝐓𝐄𝐑 𝐗𝐌𝐃 PRO"
-    },
+      "value": "𝐇𝐔𝐍𝐓𝐄𝐑 𝐗𝐌𝐃 pro"
+    }, 
+      
     "PREFIX": {
-      "description": "🔧 Command prefix (e.g . or ! or /)",
+      "description": "paste your bot prefix note! Don't apply null prefix.",
       "required": false,
       "value": "."
     },
+    
     "MODE": {
-      "description": "🌐 Bot mode: public (everyone uses it) or private (owner only)",
+      "description": "select your bot work type public-private-inbox-group.",
       "required": false,
       "value": "public"
+      
     },
+    
+    
+    "ALWAYS_ONLINE": {
+      "description": "Make it true if want always online.",
+      "required": false,
+      "value": "true"  
+    },    
+  
+    "AUTO_VOICE": {
+      "description": "Make it true if want automatic voice reply .",
+      "required": false,
+      "value": "false"
+    }, 
+
+    "AUTO_REPLY": {
+      "description": "Make it true if you want automatic reply.",
+      "required": false,
+      "value": "false"
+    }, 
+
+    "AUTO_STICKER": {
+      "description": "Make it true if you want automatic sticker.",
+      "required": false,
+      "value": "false"
+    }, 
+
+
+    "AUTO_STATUS_SEEN": {
+      "description": "Make it true for automatic status seen.",
+      "required": true,
+      "value": "true"
+    }, 
+
+    "AUTO_STATUS_REACT": {
+      "description": "make it true for automatic status reaction or like.",
+      "required": true,
+      "value": "true"
+    }, 
+
+    "AUTO_STATUS_REPLY": {
+      "description": "Make it true for auto reply msg on status seen.",
+      "required": true,
+      "value": "false"
+    }, 
+
+    "AUTO_STATUS_MSG": {
+      "description": "Type custom message on status reply",
+      "required": true,
+      "value": "*𝚂𝙴𝙴𝙽 𝚈𝙾𝚄𝚁 𝚂𝚃𝙰𝚃𝚄𝚂 𝙱𝚈 𝙷𝚄𝙽𝚃𝙴𝚁-𝚇𝙼𝙳.𝟻 💟*"
+   
+     }, 
+    
+    "OWNER_NAME": {
+      "description": "Type Bot Owner Name.",
+      "required": false,
+      "value": "ᴏʙᴇᴅᴛᴇᴄʜ"
+}, 
+
+    "OWNER_NUMBER": {
+      "description": "put the owner number for bot.",
+      "required": false,
+      "value": "254794146821"
+
+    }, 
+
+    "BOT_NAME": {
+      "description": "Type here the bot name.",
+      "required": false,
+      "value": "𝐇𝐔𝐍𝐓𝐄𝐑 𝐗𝐌𝐃 pro"
+
+      }, 
+
+    "ANTI_LINK": {
+      "description": "Make it true if you want bot auto remove group link.",
+      "required": true,
+      "value": "true"
+      
+    },
+
+     "ANTI_LINK_KICK": {
+      "description": "Make it true if you want bot auto remove group link.",
+      "required": true,
+      "value": "false"
+      
+    },
+    
+    "ANTI_BAD": {
+      "description": "Make it true if you want bot auto delete bad words.",
+      "required": false,
+      "value": "true"
+    },
+
+   "MENTION_REPLY": {
+      "description": "make it true if want mention reply if someone menetion you.",
+      "required": false,
+      "value": "false"
+    },
+    
     "MENU_IMAGE_URL": {
-      "description": "🖼️ Image shown in menus (URL to an image)",
+      "description": "add url for mention reply and menu if want.",
       "required": false,
       "value": "https://files.catbox.moe/xka13x.jpg"
     },
-    "DESCRIPTION": {
-      "description": "📝 Bot footer text shown in menus",
+    
+     "DESCRIPTION": {
+      "description": "add caption for menu and other",
       "required": false,
       "value": "*© ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴏʙᴇᴅᴛᴇᴄʜ*"
     },
-    "STICKER_NAME": {
-      "description": "🩹 Sticker pack name used when making stickers",
-      "required": false,
-      "value": "𝐇𝐔𝐍𝐓𝐄𝐑 𝐗𝐌𝐃 PRO"
-    },
-    "ANTI_DEL_PATH": {
-      "description": "🗑️ Where to send anti-delete alerts: 'same' = same chat, 'log' = owner DM only",
-      "required": false,
-      "value": "same"
-    },
-    "AUTO_BIO": {
-      "description": "📝 Auto bio changer: true = enable at startup, false = disable",
+
+      "DELETE_LINKS": {
+      "description": "remove links from group automatically without removing member",
       "required": false,
       "value": "false"
     },
-    "AUTO_BIO_INTERVAL": {
-      "description": "⏱️ How often (in minutes) to change bio automatically (default 30)",
-      "required": false,
-      "value": "30"
-    },
-    "WELCOME": {
-      "description": "👋 true = send welcome/goodbye messages in groups",
-      "required": false,
-      "value": "true"
-    },
-    "ADMIN_EVENTS": {
-      "description": "📢 true = announce when members are promoted/demoted",
-      "required": false,
-      "value": "true"
-    },
-    "ANTI_LINK": {
-      "description": "🔗 true = automatically delete group links posted in groups",
-      "required": false,
-      "value": "true"
-    },
-    "ANTI_LINK_KICK": {
-      "description": "🚫 true = kick member who posts group links",
-      "required": false,
-      "value": "false"
-    },
-    "ANTI_BAD": {
-      "description": "🤬 true = auto-delete bad/offensive words",
-      "required": false,
-      "value": "true"
-    },
-    "ANTI_VV": {
-      "description": "👁️ true = save and forward view-once messages to yourself",
-      "required": false,
-      "value": "true"
-    },
-    "AUTO_STATUS_SEEN": {
-      "description": "📱 true = automatically view all status updates",
-      "required": false,
-      "value": "true"
-    },
-    "AUTO_STATUS_REACT": {
-      "description": "❤️ true = automatically react to status updates",
-      "required": false,
-      "value": "true"
-    },
-    "AUTO_STATUS_REPLY": {
-      "description": "💬 true = automatically reply to status updates",
-      "required": false,
-      "value": "false"
-    },
-    "AUTO_STATUS_MSG": {
-      "description": "📨 Message sent as auto-reply on status (if AUTO_STATUS_REPLY is true)",
-      "required": false,
-      "value": "*𝚂𝙴𝙴𝙽 𝚈𝙾𝚄𝚁 𝚂𝚃𝙰𝚃𝚄𝚂 𝙱𝚈 𝙷𝚄𝙽𝚃𝙴𝚁-𝚇𝙼𝙳 PRO 💟*"
-    },
-    "AUTO_REACT": {
-      "description": "😊 true = react to every incoming message with random emoji",
-      "required": false,
-      "value": "true"
-    },
-    "CUSTOM_REACT": {
-      "description": "🎨 true = use your own emojis for reactions (set CUSTOM_REACT_EMOJIS)",
-      "required": false,
-      "value": "false"
-    },
-    "CUSTOM_REACT_EMOJIS": {
-      "description": "🎭 Comma-separated emojis to use for custom reactions",
-      "required": false,
-      "value": "💝,💖,❤️,🧡,💛,💚,💙,💜"
-    },
-    "ALWAYS_ONLINE": {
-      "description": "🟢 true = bot always appears online",
-      "required": false,
-      "value": "true"
-    },
-    "READ_MESSAGE": {
-      "description": "👁️ true = bot marks all messages as read automatically",
-      "required": false,
-      "value": "false"
-    },
-    "READ_CMD": {
-      "description": "✅ true = mark command messages as read",
-      "required": false,
-      "value": "false"
-    },
-    "AUTO_REPLY": {
-      "description": "💬 true = auto-reply to messages (chatbot mode)",
-      "required": false,
-      "value": "false"
-    },
-    "AUTO_TYPING": {
-      "description": "⌨️ true = show typing indicator when processing",
-      "required": false,
-      "value": "false"
-    },
+    
     "AUTO_RECORDING": {
-      "description": "🎙️ true = show recording status for voice messages",
+      "description": "Make it true if you want auto recoding.",
       "required": false,
       "value": "true"
     },
-    "AUTO_STICKER": {
-      "description": "🩹 true = automatically convert every image to sticker",
+
+    "AUTO_TYPING": {
+      "description": "Make it true if you want auto typing.",
       "required": false,
       "value": "false"
     },
-    "AUTO_VOICE": {
-      "description": "🎵 true = auto-reply with random voice note",
+
+    "AUTO_REACT": {
+      "description": "Make it true if you want react on every message.",
       "required": false,
       "value": "false"
     },
-    "MENTION_REPLY": {
-      "description": "📣 true = reply when someone mentions the bot",
+    
+    "CUSTOM_REACT": {
+      "description": "Make it true if you want custom reactions.",
+      "required": false,
+      "value": "false"
+      
+    }, 
+    
+    "CUSTOM_REACT_EMOJIS": {
+      "description": "put here custom react react emojis.",
+      "required": false,
+      "value": "💝,💖,💗,❤️‍🩹,❤️,🧡,💛,💚,💙,💜,🤎,🖤,🤍"
+    }, 
+    
+    "ANTI_DEL_PATH": {
+      "description": "change it to -same- if you want to resend deleted message in same chat",
+      "required": false,
+      "value": "log"
+    }, 
+
+    "ADMIN_EVENTS": {
+      "description": "make it true if want know who promote or demote a member .",
       "required": false,
       "value": "false"
     },
-    "DELETE_LINKS": {
-      "description": "🔗 true = delete links in groups without kicking member",
+
+    "WELCOME": {
+      "description": "make it true if want goodbye and welcome message in groups.",
+      "required": false,
+      "value": "true"
+    },
+
+    "READ_MESSAGE": {
+      "description": "Make it true if you want bot read your all sms just now.",
       "required": false,
       "value": "false"
     }
-  },
-  "buildpacks": [
-    {
-      "url": "https://github.com/heroku/heroku-buildpack-nodejs.git"
-    }
-  ],
+
+},
+
+     "buildpacks": [
+        {
+            "url": "https://github.com/heroku/heroku-buildpack-nodejs.git"
+        }
+     ],
   "stack": "heroku-24"
 }
+  

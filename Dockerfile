@@ -1,25 +1,19 @@
-FROM node:18-bullseye-slim
+# Base image
+FROM node:16
 
-# Install ffmpeg for audio/video processing
-RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    wget \
-    curl \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+# Set working directory
+WORKDIR /usr/src/app
 
-WORKDIR /app
-
+# Copy package.json and install dependencies
 COPY package*.json ./
+RUN npm install
 
-# Install dependencies
-RUN npm install --production --legacy-peer-deps
-
+# Copy application source code
 COPY . .
 
-# Create sessions directory
-RUN mkdir -p sessions data
+# Expose the port the app runs on
+EXPOSE 3000
 
-EXPOSE 9090
+# Start the application
+CMD ["npm", "start"]
 
-CMD ["node", "index.js"]
