@@ -1,69 +1,69 @@
 const { cmd } = require('../command');
 const axios = require('axios');
-const IMG = 'https://files.catbox.moe/xka13x.jpg';
-
-async function spotifyDownload(url) {
-    const apis = [
-        async () => {
-            const res = await axios.get(`https://api.siputzx.my.id/api/d/spotify?url=${encodeURIComponent(url)}`, { timeout: 20000 });
-            if (res.data?.data?.download) return res.data.data;
-        },
-        async () => {
-            const res = await axios.get(`https://api.giftedtech.web.id/api/download/spotifydl?apikey=gifted&url=${encodeURIComponent(url)}`, { timeout: 20000 });
-            if (res.data?.result) return { title: res.data.result.title, artis: res.data.result.artists, image: res.data.result.image, download: res.data.result.download_url, durasi: res.data.result.duration_ms };
-        },
-        async () => {
-            const res = await axios.get(`https://api.ryzendesu.vip/api/downloader/spotify?url=${encodeURIComponent(url)}`, { timeout: 20000 });
-            if (res.data?.downloadUrl) return { title: res.data.metadata?.name || 'Spotify Track', artis: res.data.metadata?.artists?.join(', '), image: res.data.metadata?.image, download: res.data.downloadUrl, durasi: 0 };
-        }
-    ];
-    for (const a of apis) { try { const r = await a(); if (r?.download) return r; } catch (e) {} }
-    throw new Error('All Spotify APIs failed');
-}
 
 cmd({
-    pattern: "spotify",
-    alias: ["sptdl", "spotifydl", "spotidown"],
+    pattern: "sptdl",
+    alias: ["spotifydl", "spotidown"],
     desc: "Download Spotify music as MP3",
-    category: "download",
+    category: "downloader",
     react: "🎵",
     filename: __filename
 },
-async (conn, mek, m, { from, q, reply }) => {
+async (conn, mek, m, { from, args, q, reply, pushname }) => {
     try {
-        if (!q) return reply('❌ *Usage:* .spotify [spotify url]\n\n*Example:* .spotify https://open.spotify.com/track/...');
-        if (!q.includes('spotify.com')) return reply('❌ Please provide a valid Spotify URL!');
+        if (!q) return reply("*Please provide a Spotify link.*");
+        if (!q.includes("spotify.com")) return reply("*Invalid Spotify link provided.*");
 
-        await conn.sendMessage(from, { react: { text: '⏳', key: mek.key } });
-        const data = await spotifyDownload(q);
+        reply("⏳ *Fetching Spotify track... Please wait!*");
 
-        const durSec = Math.floor((data.durasi || 0) / 1000);
-        const dur = `${Math.floor(durSec/60)}:${(durSec%60).toString().padStart(2,'0')}`;
+        const { data } = await axios.get(`https://api.siputzx.my.id/api/d/spotify`, {
+            params: { url: q }
+        });
 
-        const caption = `🎵 *Spotify Downloader*\n\n🎶 *Title:* ${data.title || 'Unknown'}\n🧑‍🎤 *Artist:* ${data.artis || 'Unknown'}\n⏱️ *Duration:* ${dur}\n\n> ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴏʙᴇᴅ ᴛᴇᴄʜ`;
+        if (!data.status || !data.data) return reply("*Failed to fetch Spotify track. Please try again later.*");
 
-        if (data.image) {
-            await conn.sendMessage(from, { image: { url: data.image }, caption }, { quoted: mek });
-        }
+        const {
+            title,
+            type,
+            artis,
+            durasi,
+            image,
+            download
+        } = data.data;
 
+        // Convert duration from milliseconds to MM:SS format
+        const durationSec = Math.floor(durasi / 1000);
+        const minutes = Math.floor(durationSec / 60).toString().padStart(2, '0');
+        const seconds = (durationSec % 60).toString().padStart(2, '0');
+        const duration = `${minutes}:${seconds}`;
+
+        const caption = `
+*⫷⦁ SPOTIFY DOWNLOADER ⦁⫸*
+
+🎵 *Title:* ${title}
+🧑‍🎤 *Artist:* ${artis}
+🎶 *Type:* ${type}
+⏱️ *Duration:* ${duration}
+
+> *DOWNLOADED BY HUNTER-XMD*
+> *© CREATED BY OBED*
+`.trim();
+
+        // Send cover image with track info
         await conn.sendMessage(from, {
-            audio: { url: data.download },
-            mimetype: 'audio/mpeg',
-            fileName: `${(data.title || 'spotify').replace(/[^\w\s]/gi, '')}.mp3`,
-            contextInfo: {
-                externalAdReply: {
-                    title: `🎵 ${(data.title || 'Spotify').substring(0, 40)}`,
-                    body: `🧑‍🎤 ${data.artis || 'Unknown'}`,
-                    thumbnailUrl: data.image || IMG,
-                    sourceUrl: q,
-                    mediaType: 1
-                }
-            }
+            image: { url: image },
+            caption: caption
         }, { quoted: mek });
 
-        await conn.sendMessage(from, { react: { text: '✅', key: mek.key } });
+        // Send the MP3 file
+        await conn.sendMessage(from, {
+            audio: { url: download },
+            mimetype: "audio/mpeg",
+            ptt: false
+        }, { quoted: mek });
+
     } catch (e) {
-        reply(`❌ Failed: ${e.message}`);
-        await conn.sendMessage(from, { react: { text: '❌', key: mek.key } });
+        console.error("Spotify Download Error:", e);
+        reply("*Oops! An error occurred while downloading the Spotify track.*");
     }
 });
