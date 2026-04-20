@@ -51,6 +51,9 @@ function printBanner() {
 }
 
 // Enhanced Log Functions (simplified)
+/**
+ * Logs a success message with an optional emoji.
+ */
 function logSuccess(message, emoji = '✅') {
   console.log(`${emoji} ${chalk.hex(colors.success).bold(message)}`);
 }
@@ -59,6 +62,9 @@ function logError(message, emoji = '❌') {
   console.log(`${emoji} ${chalk.hex(colors.error).bold(message)}`);
 }
 
+/**
+ * Logs a warning message with an optional emoji.
+ */
 function logWarning(message, emoji = '⚠️') {
   console.log(`${emoji} ${chalk.hex(colors.warning).bold(message)}`);
 }
@@ -67,11 +73,17 @@ function logInfo(message, emoji = 'ℹ️') {
   console.log(`${emoji} ${chalk.hex(colors.info).bold(message)}`);
 }
 
+/**
+ * Logs a system message with an optional emoji.
+ */
 function logSystem(message, emoji = '⚙️') {
   console.log(`${emoji} ${chalk.hex(colors.system).bold(message)}`);
 }
 
 // Beautiful Divider
+/**
+ * Logs a styled divider with optional text.
+ */
 function logDivider(text = '') {
   const dividerLength = 60;
   const textLength = text.length;
@@ -87,6 +99,9 @@ function logDivider(text = '') {
 }
 
 // Message Log with timestamp and color
+/**
+ * Logs a message with a timestamp, type, sender, content, and optional extra information.
+ */
 function logMessage(type, from, content = '', extra = '') {
   const timestamp = chalk.gray(`[${new Date().toLocaleTimeString()}]`);
   const types = {
@@ -106,6 +121,9 @@ function logMessage(type, from, content = '', extra = '') {
 }
 
 // Connection Status Log
+/**
+ * Logs the connection status with an icon and color.
+ */
 function logConnection(status, details = '') {
   const statusIcons = {
     'CONNECTING': { icon: '🔄', color: colors.warning },
@@ -121,6 +139,9 @@ function logConnection(status, details = '') {
 }
 
 // Memory Usage Log - FIXED VERSION (no broken strings, no invalid escapes)
+/**
+ * Logs the current memory usage of the process.
+ */
 function logMemory() {
   const used = process.memoryUsage();
   const rss = Math.round(used.rss / 1024 / 1024);
@@ -151,6 +172,9 @@ function logPlugin(name, version, status = 'LOADED') {
 }
 
 // Command Execution Log
+/**
+ * Logs a command execution with user and status.
+ */
 function logCommand(user, command, success = true) {
   const userDisplay = chalk.hex(colors.system)(user);
   const commandDisplay = chalk.hex(colors.info).bold(command);
@@ -176,6 +200,9 @@ function logStatusUpdate(action, target, details = '') {
 }
 
 // Media Log
+/**
+ * Logs media information including type, size, and source.
+ */
 function logMedia(type, size, from = '') {
   const types = {
     'IMAGE': { icon: '🖼️', color: colors.success },
@@ -193,6 +220,9 @@ function logMedia(type, size, from = '') {
 }
 
 // Group Activity Log
+/**
+ * Logs a group action with an icon and color based on the action type.
+ */
 function logGroupAction(action, group, user = '') {
   const actions = {
     'JOIN': { icon: '👥', color: colors.success },
@@ -210,6 +240,17 @@ function logGroupAction(action, group, user = '') {
 }
 
 // Performance Log
+/**
+ * Logs the performance of a given operation with its execution time.
+ *
+ * The function determines the color coding for the execution time based on predefined thresholds.
+ * It uses the `chalk` library to format the output, displaying the operation name and the time taken
+ * in a visually distinct manner. The time is categorized into 'fast', 'good', 'slow', or 'critical'
+ * based on its duration in milliseconds.
+ *
+ * @param {string} operation - The name of the operation being logged.
+ * @param {number} timeMs - The time taken for the operation in milliseconds.
+ */
 function logPerformance(operation, timeMs) {
   const color = timeMs < 100 ? colors.success : 
                 timeMs < 500 ? colors.warning : 
@@ -229,6 +270,9 @@ function logPerformance(operation, timeMs) {
 }
 
 // Initialize logging system
+/**
+ * Initializes the logging system for the application.
+ */
 function initLogging() {
   console.clear();
   printBanner();
@@ -237,6 +281,9 @@ function initLogging() {
 }
 
 // Keep original functions for compatibility
+/**
+ * Returns a styled string based on the provided text and type.
+ */
 function gurumdStyle(text, type = 'normal') {
     const styles = {
         normal: chalk.hex(colors.primary).bold(`ᴳᵁᴿᵁᴹᴰ ${text}`),
@@ -280,6 +327,9 @@ const ownerNumber = ['25491637868@s.whatsapp.net'];
 const AUTO_RESTART_INTERVAL = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
 let restartTimer = null;
 
+/**
+ * Initiates an auto-restart of the bot.
+ */
 function restartBot() {
     logWarning('🔄 AUTO-RESTART INITIATED', '🔄');
     logSystem(`Restarting after ${AUTO_RESTART_INTERVAL/3600000} hours...`, '⏰');
@@ -287,6 +337,9 @@ function restartBot() {
     process.exit(0);
 }
 
+/**
+ * Schedules an automatic restart of the bot after a specified interval.
+ */
 function scheduleAutoRestart() {
     if (restartTimer) clearTimeout(restartTimer);
     restartTimer = setTimeout(restartBot, AUTO_RESTART_INTERVAL);
@@ -312,6 +365,13 @@ if (!fs.existsSync(tempDir)) {
     fs.mkdirSync(tempDir, { recursive: true });
 }
 
+/**
+ * Cleans up temporary files in the specified directory.
+ *
+ * The function reads the contents of the tempDir directory and attempts to delete each file found.
+ * If an error occurs during reading, a warning is logged. If the directory is empty, the function exits early.
+ * It uses promises to handle the deletion of files and logs the success or failure of each operation.
+ */
 const clearTempDir = () => {
     fs.readdir(tempDir, (err, files) => {
         if (err) {
@@ -343,6 +403,13 @@ if (!isHeroku) {
 }
 
 // =================== SESSION CLEANUP FUNCTION ===================
+/**
+ * Clears all session data from the sessions directory.
+ *
+ * This function checks if the sessions directory exists and, if so, reads all files within it.
+ * It attempts to delete each file, logging a warning upon successful deletion of all session data.
+ * If any errors occur during the deletion process or while accessing the directory, they are caught and logged as errors.
+ */
 function clearSessionData() {
     try {
         const sessionPath = __dirname + '/sessions/';
@@ -422,6 +489,18 @@ global.AUTO_SAVE_STATUS = false;
 
 const autoReplyCooldown = new Map();
 
+/**
+ * Sends a tagged reply message to a specified recipient.
+ *
+ * This function checks if tagging is enabled in the configuration. If not, it sends a default branded message.
+ * If tagging is enabled, it constructs a message with a tag either at the start or end based on the configuration
+ * and sends it to the specified recipient. The message can also include a quoted message if provided.
+ *
+ * @param {Object} conn - The connection object used to send the message.
+ * @param {string} from - The recipient's identifier to whom the message is sent.
+ * @param {string} teks - The main text content of the message.
+ * @param {Object|null} [quoted=null] - An optional quoted message object.
+ */
 const taggedReply = (conn, from, teks, quoted = null) => {
     if (!config.ENABLE_TAGGING) {
         const gurumdBrandedText = `ʜᴜɴᴛᴇʀ xᴍᴅ ᴘʀᴏ\n\n${teks}`;
@@ -580,6 +659,9 @@ async function connectToWA() {
             global.giftedStatus = conn.giftedStatus;
 
             // Monitor for session issues
+            /**
+             * Checks the health of the session and clears it if unhealthy.
+             */
             const checkSessionHealth = () => {
                 if (macErrorCount >= MAX_MAC_ERRORS || sessionCloseCount >= MAX_SESSION_CLOSES) {
                     logError(`Session unhealthy! MAC errors: ${macErrorCount}, Session closes: ${sessionCloseCount}`, '🔐');
@@ -1343,6 +1425,9 @@ setInterval(async () => {
     catch (error) { logError(`Scheduled auto-follow error: ${error.message}`, '❌'); }
 }, 60 * 60 * 1000);
 
+/**
+ * Returns the size of the media buffer.
+ */
 async function getSizeMedia(buffer) { return { size: buffer.length }; }
 
 app.get("/", (req, res) => { res.send("HUNTER XMD PRO IS STARTED ✅"); });
